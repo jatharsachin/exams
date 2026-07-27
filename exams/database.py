@@ -29,6 +29,15 @@ def init_db():
             is_active INTEGER DEFAULT 0
         );
 
+        CREATE TABLE IF NOT EXISTS terms (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            acad_year_id INTEGER NOT NULL,
+            name TEXT NOT NULL,
+            code TEXT NOT NULL,
+            FOREIGN KEY (acad_year_id) REFERENCES academic_years(id) ON DELETE CASCADE,
+            UNIQUE(acad_year_id, code)
+        );
+
         CREATE TABLE IF NOT EXISTS courses (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             code TEXT NOT NULL UNIQUE,
@@ -213,6 +222,9 @@ def init_db():
                 ('ceo', 'ceo123', 'Exam Officer', 'CEO'),
                 ('clerk', 'clerk123', 'Exam Clerk', 'Clerk');
             INSERT INTO academic_years (name, is_active) VALUES ('2025-26', 1);
+            INSERT INTO terms (acad_year_id, name, code) VALUES
+                (1, 'Winter (Oct-Nov)', 'WINTER'),
+                (1, 'Summer (Mar-Apr)', 'SUMMER');
         """)
 
     conn.commit()

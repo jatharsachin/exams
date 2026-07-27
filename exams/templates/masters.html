@@ -1,0 +1,147 @@
+{% extends "base.html" %}{% block title %}| Masters{% endblock %}
+{% block content %}
+<h4 class="mb-3 pt-2"><i class="bi bi-database-gear me-2"></i>Masters</h4>
+<ul class="nav nav-tabs mb-3" id="masterTabs" role="tablist">
+    <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-year">Academic Year & Term</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-course">Courses</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-subject">Subjects</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-room">Rooms & Blocks</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-staff">Staff</button></li>
+</ul>
+
+<div class="tab-content">
+<!-- Academic Year & Terms -->
+<div class="tab-pane fade show active" id="tab-year">
+<div class="row"><div class="col-5"><div class="card mb-3"><div class="card-header">Academic Year</div><div class="card-body">
+    <div class="row g-2 mb-2">
+        <div class="col-5"><input class="form-control form-control-sm" id="ayname" placeholder="Year (e.g. 2025-26)"></div>
+        <div class="col-4"><input class="form-control form-control-sm" id="aystart" placeholder="Start Date"></div>
+        <div class="col-3"><button class="btn btn-primary btn-sm w-100" onclick="saveAY()">Save Year</button></div>
+    </div>
+    <table class="table table-sm table-bordered" id="ayTable"><thead><tr><th>Year</th><th>Terms</th><th>Status</th><th></th></tr></thead><tbody></tbody></table>
+</div></div></div><div class="col-7"><div class="card mb-3"><div class="card-header">Terms (Winter / Summer)</div><div class="card-body">
+    <div class="row g-2 mb-2">
+        <div class="col-3"><select class="form-select form-select-sm" id="tmyear"></select></div>
+        <div class="col-3"><input class="form-control form-control-sm" id="tmname" placeholder="e.g. Winter (Oct-Nov)"></div>
+        <div class="col-2"><input class="form-control form-control-sm" id="tmcode" placeholder="WINTER"></div>
+        <div class="col-2"><button class="btn btn-primary btn-sm w-100" onclick="saveTerm()">Save</button></div>
+        <div class="col-2"><button class="btn btn-success btn-sm w-100" onclick="autoCreateTerms()">Auto</button></div>
+    </div>
+    <table class="table table-sm table-bordered" id="tmTable"><thead><tr><th>Year</th><th>Term Name</th><th>Code</th><th></th></tr></thead><tbody></tbody></table>
+</div></div></div></div>
+</div>
+
+<!-- Courses -->
+<div class="tab-pane fade" id="tab-course">
+<div class="card mb-3"><div class="card-body">
+    <form id="courseForm" class="row g-2">
+        <input type="hidden" id="cid">
+        <div class="col-2"><input class="form-control form-control-sm" id="ccode" placeholder="Code" required></div>
+        <div class="col-4"><input class="form-control form-control-sm" id="cname" placeholder="Course Name" required></div>
+        <div class="col-3"><select class="form-select form-select-sm" id="cfaculty"><option>Science & Technology</option><option>Commerce & Management</option><option>Humanities</option><option>Inter-Disciplinary</option></select></div>
+        <div class="col-1"><input class="form-control form-control-sm" id="cdur" value="3" type="number"></div>
+        <div class="col-2"><button class="btn btn-primary btn-sm w-100" type="submit">Save</button></div>
+    </form>
+</div></div>
+<table class="table table-sm table-bordered table-hover"><thead><tr><th>Code</th><th>Name</th><th>Faculty</th><th>Years</th><th>Action</th></tr></thead><tbody id="ctbody"></tbody></table>
+</div>
+
+<!-- Subjects -->
+<div class="tab-pane fade" id="tab-subject">
+<div class="card mb-3"><div class="card-body">
+    <form id="subjForm" class="row g-2">
+        <input type="hidden" id="sid">
+        <div class="col-2"><input class="form-control form-control-sm" id="scode" placeholder="Subject Code" required></div>
+        <div class="col-3"><input class="form-control form-control-sm" id="sname" placeholder="Subject Name" required></div>
+        <div class="col-2"><select class="form-select form-select-sm" id="scourse"></select></div>
+        <div class="col-1"><input class="form-control form-control-sm" id="spaper" value="1" type="number"></div>
+        <div class="col-2"><select class="form-select form-select-sm" id="stype"><option>Theory</option><option>Practical</option><option>Oral</option><option>Project</option><option>Internal</option><option>Termwork</option></select></div>
+        <div class="col-1"><input class="form-control form-control-sm" id="scredits" value="4" type="number"></div>
+        <div class="col-1"><button class="btn btn-primary btn-sm w-100" type="submit">Save</button></div>
+    </form>
+</div></div>
+<table class="table table-sm table-bordered table-hover"><thead><tr><th>Code</th><th>Name</th><th>Course</th><th>Paper</th><th>Type</th><th>Credits</th><th></th></tr></thead><tbody id="stbody"></tbody></table>
+</div>
+
+<!-- Rooms -->
+<div class="tab-pane fade" id="tab-room">
+<div class="row"><div class="col-4"><div class="card mb-3"><div class="card-header">Blocks</div><div class="card-body">
+    <div class="mb-2"><input class="form-control form-control-sm" id="bname" placeholder="Block Name"><input class="form-control form-control-sm mt-1" id="bfloor" placeholder="Floor"></div>
+    <button class="btn btn-primary btn-sm" onclick="saveBlock()">Add Block</button>
+    <ul class="list-group mt-2" id="blist"></ul>
+</div></div></div>
+<div class="col-8"><div class="card mb-3"><div class="card-header">Rooms</div><div class="card-body">
+    <form id="roomForm" class="row g-2"><input type="hidden" id="rid">
+        <div class="col-3"><input class="form-control form-control-sm" id="rname" placeholder="Room Name" required></div>
+        <div class="col-3"><select class="form-select form-select-sm" id="rblock"></select></div>
+        <div class="col-2"><input class="form-control form-control-sm" id="rcap" placeholder="Capacity" type="number"></div>
+        <div class="col-2"><input class="form-control form-control-sm" id="rbench" placeholder="Benches" type="number"></div>
+        <div class="col-2"><button class="btn btn-primary btn-sm" type="submit">Save</button></div>
+    </form>
+    <table class="table table-sm table-bordered mt-2"><thead><tr><th>Room</th><th>Block</th><th>Capacity</th><th>Benches</th><th></th></tr></thead><tbody id="rtbody"></tbody></table>
+</div></div></div>
+</div>
+
+<!-- Staff -->
+<div class="tab-pane fade" id="tab-staff">
+<div class="card mb-3"><div class="card-body">
+    <form id="staffForm" class="row g-2">
+        <input type="hidden" id="stid">
+        <div class="col-3"><input class="form-control form-control-sm" id="stname" placeholder="Full Name" required></div>
+        <div class="col-2"><input class="form-control form-control-sm" id="stdesig" placeholder="Designation"></div>
+        <div class="col-2"><input class="form-control form-control-sm" id="stdept" placeholder="Department"></div>
+        <div class="col-2"><input class="form-control form-control-sm" id="stmob" placeholder="Mobile"></div>
+        <div class="col-2"><select class="form-select form-select-sm" id="strole"><option>Principal</option><option>CEO</option><option>Senior Supervisor</option><option selected>Junior Supervisor</option><option>Peon</option><option>HOD</option><option>Clerk</option><option>Other</option></select></div>
+        <div class="col-1"><button class="btn btn-primary btn-sm w-100" type="submit">Save</button></div>
+    </form>
+</div></div>
+<table class="table table-sm table-bordered table-hover"><thead><tr><th>Name</th><th>Designation</th><th>Dept</th><th>Mobile</th><th>Role</th><th></th></tr></thead><tbody id="stfbody"></tbody></table>
+</div>
+</div><!-- tab-content -->
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ==================== ACADEMIC YEAR ====================
+function loadAY(){fetch('/api/acadyears').then(r=>r.json()).then(data=>{let h='';data.forEach(y=>{h+=`<tr><td>${y.name}</td><td>${y.terms_list||'--'}</td><td>${y.is_active?'<span class="badge bg-success">Active</span>':'<button class="btn btn-sm btn-outline-success" onclick="activateAY(${y.id})">Activate</button>'}</td><td><button class="btn btn-sm btn-outline-danger" onclick="delAY(${y.id})">Del</button></td></tr>`;});document.getElementById('ayTable').querySelector('tbody').innerHTML=h;let opts='';data.forEach(y=>opts+=`<option value="${y.id}">${y.name}</option>`);document.getElementById('tmyear').innerHTML=opts;loadTerms();});}
+function saveAY(){let n=document.getElementById('ayname').value.trim();if(!n)return;fetch('/api/acadyears/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:n,start_date:document.getElementById('aystart').value})}).then(r=>r.json()).then(d=>{if(d.ok)loadAY();});}
+function delAY(id){if(confirm('Delete this academic year?'))fetch('/api/acadyears/delete/'+id,{method:'DELETE'}).then(()=>loadAY());}
+function activateAY(id){fetch('/api/acadyears/activate/'+id,{method:'POST'}).then(()=>loadAY());}
+function loadTerms(){let aid=document.getElementById('tmyear').value;let url=aid?'/api/terms?acadyear_id='+aid:'/api/terms';fetch(url).then(r=>r.json()).then(data=>{let h='';data.forEach(t=>{h+=`<tr><td>${t.year_name}</td><td>${t.name}</td><td><code>${t.code}</code></td><td><button class="btn btn-sm btn-outline-danger" onclick="delTerm(${t.id})">Del</button></td></tr>`;});document.getElementById('tmTable').querySelector('tbody').innerHTML=h;});}
+function saveTerm(){fetch('/api/terms/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:document.getElementById('tmname').value,code:document.getElementById('tmcode').value,acad_year_id:document.getElementById('tmyear').value})}).then(r=>r.json()).then(d=>{if(d.ok){document.getElementById('tmname').value='';document.getElementById('tmcode').value='';loadTerms();}});}
+function delTerm(id){if(confirm('Delete?'))fetch('/api/terms/delete/'+id,{method:'DELETE'}).then(()=>loadTerms());}
+function autoCreateTerms(){let ay=document.getElementById('tmyear').value;if(!ay)return alert('Select academic year first');let pairs=[{name:'Winter (Oct-Nov)',code:'WINTER'},{name:'Summer (Mar-Apr)',code:'SUMMER'}];Promise.all(pairs.map(p=>fetch('/api/terms/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...p,acad_year_id:ay})}))).then(()=>loadTerms());}
+document.getElementById('tmyear').onchange=loadTerms;
+
+// ==================== COURSES ====================
+function loadCourses(){fetch('/api/courses').then(r=>r.json()).then(data=>{let h='';data.forEach(c=>{h+=`<tr><td>${c.code}</td><td>${c.name}</td><td>${c.faculty}</td><td>${c.duration_years}</td><td><button class="btn btn-sm btn-outline-primary" onclick="editCourse(${c.id})">Edit</button> <button class="btn btn-sm btn-outline-danger" onclick="delCourse(${c.id})">Del</button></td></tr>`;});document.getElementById('ctbody').innerHTML=h;});}
+function editCourse(id){fetch('/api/courses').then(r=>r.json()).then(data=>{let c=data.find(x=>x.id==id);if(c){document.getElementById('cid').value=c.id;document.getElementById('ccode').value=c.code;document.getElementById('cname').value=c.name;document.getElementById('cfaculty').value=c.faculty;document.getElementById('cdur').value=c.duration_years;}});}
+function delCourse(id){if(confirm('Delete?'))fetch('/api/courses/delete/'+id,{method:'DELETE'}).then(()=>loadCourses());}
+document.getElementById('courseForm').onsubmit=function(e){e.preventDefault();fetch('/api/courses/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:document.getElementById('cid').value||null,code:document.getElementById('ccode').value,name:document.getElementById('cname').value,faculty:document.getElementById('cfaculty').value,duration_years:document.getElementById('cdur').value})}).then(()=>{this.reset();document.getElementById('cid').value='';loadCourses();});};
+
+// ==================== SUBJECTS ====================
+function loadSubjects(){fetch('/api/subjects').then(r=>r.json()).then(data=>{let h='';data.forEach(s=>{h+=`<tr><td><code>${s.code}</code></td><td>${s.name}</td><td>${s.course_name||''}</td><td>${s.paper_no}</td><td>${s.type}</td><td>${s.credits}</td><td><button class="btn btn-sm btn-outline-primary" onclick="editSubj(${s.id})">Edit</button> <button class="btn btn-sm btn-outline-danger" onclick="delSubj(${s.id})">Del</button></td></tr>`;});document.getElementById('stbody').innerHTML=h;});}
+function editSubj(id){fetch('/api/subjects').then(r=>r.json()).then(d=>{let s=d.find(x=>x.id==id);if(s){document.getElementById('sid').value=s.id;document.getElementById('scode').value=s.code;document.getElementById('sname').value=s.name;document.getElementById('scourse').value=s.course_code;document.getElementById('spaper').value=s.paper_no;document.getElementById('stype').value=s.type;document.getElementById('scredits').value=s.credits;}});}
+function delSubj(id){if(confirm('Delete?'))fetch('/api/subjects/delete/'+id,{method:'DELETE'}).then(()=>loadSubjects());}
+fetch('/api/courses').then(r=>r.json()).then(data=>{let o='';data.forEach(c=>o+=`<option value="${c.code}">${c.code} - ${c.name}</option>`);document.getElementById('scourse').innerHTML=o;});
+document.getElementById('subjForm').onsubmit=function(e){e.preventDefault();fetch('/api/subjects/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:document.getElementById('sid').value||null,code:document.getElementById('scode').value,name:document.getElementById('sname').value,course_code:document.getElementById('scourse').value,paper_no:document.getElementById('spaper').value,type:document.getElementById('stype').value,credits:document.getElementById('scredits').value})}).then(()=>{this.reset();document.getElementById('sid').value='';loadSubjects();});};
+
+// ==================== ROOMS & BLOCKS ====================
+function loadBlocks(){fetch('/api/blocks').then(r=>r.json()).then(data=>{let h='';data.forEach(b=>{h+=`<li class="list-group-item d-flex justify-content-between"><span>${b.name} <small>(${b.floor||'-'})</small></span><button class="btn btn-sm text-danger" onclick="delBlock(${b.id})">&times;</button></li>`;});document.getElementById('blist').innerHTML=h;document.getElementById('rblock').innerHTML='<option value="">-- Block --</option>'+data.map(b=>`<option value="${b.name}">${b.name}</option>`).join('');});}
+function saveBlock(){let n=document.getElementById('bname').value.trim();if(!n)return;fetch('/api/blocks/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:n,floor:document.getElementById('bfloor').value})}).then(()=>{document.getElementById('bname').value='';document.getElementById('bfloor').value='';loadBlocks();});}
+function delBlock(id){if(confirm('Delete?'))fetch('/api/blocks/delete/'+id,{method:'DELETE'}).then(()=>{loadBlocks();loadRooms();});}
+function loadRooms(){fetch('/api/rooms').then(r=>r.json()).then(d=>{let h='';d.forEach(r=>h+=`<tr><td>${r.name}</td><td>${r.block_name}</td><td>${r.capacity}</td><td>${r.bench_count}</td><td><button class="btn btn-sm btn-outline-primary" onclick="editRoom(${r.id})">Edit</button> <button class="btn btn-sm btn-outline-danger" onclick="delRoom(${r.id})">Del</button></td></tr>`);document.getElementById('rtbody').innerHTML=h;});}
+function editRoom(id){fetch('/api/rooms').then(r=>r.json()).then(d=>{let r=d.find(x=>x.id==id);if(r){document.getElementById('rid').value=r.id;document.getElementById('rname').value=r.name;document.getElementById('rblock').value=r.block_name;document.getElementById('rcap').value=r.capacity;document.getElementById('rbench').value=r.bench_count;}});}
+function delRoom(id){if(confirm('Delete?'))fetch('/api/rooms/delete/'+id,{method:'DELETE'}).then(()=>loadRooms());}
+document.getElementById('roomForm').onsubmit=function(e){e.preventDefault();fetch('/api/rooms/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:document.getElementById('rid').value||null,name:document.getElementById('rname').value,block_name:document.getElementById('rblock').value,capacity:document.getElementById('rcap').value,bench_count:document.getElementById('rbench').value})}).then(()=>{this.reset();document.getElementById('rid').value='';loadRooms();});};
+
+// ==================== STAFF ====================
+function loadStaff(){fetch('/api/staff').then(r=>r.json()).then(d=>{let h='';d.forEach(s=>h+=`<tr><td>${s.name}</td><td>${s.designation||''}</td><td>${s.department||''}</td><td>${s.mobile||''}</td><td><span class="badge bg-${s.role=='Principal'?'danger':s.role=='CEO'?'warning text-dark':'primary'}">${s.role}</span></td><td><button class="btn btn-sm btn-outline-primary" onclick="editStaff(${s.id})">Edit</button> <button class="btn btn-sm btn-outline-danger" onclick="delStaff(${s.id})">Del</button></td></tr>`);document.getElementById('stfbody').innerHTML=h;});}
+function editStaff(id){fetch('/api/staff').then(r=>r.json()).then(d=>{let s=d.find(x=>x.id==id);if(s){document.getElementById('stid').value=s.id;document.getElementById('stname').value=s.name;document.getElementById('stdesig').value=s.designation||'';document.getElementById('stdept').value=s.department||'';document.getElementById('stmob').value=s.mobile||'';document.getElementById('strole').value=s.role;}});}
+function delStaff(id){if(confirm('Delete?'))fetch('/api/staff/delete/'+id,{method:'DELETE'}).then(()=>loadStaff());}
+document.getElementById('staffForm').onsubmit=function(e){e.preventDefault();fetch('/api/staff/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:document.getElementById('stid').value||null,name:document.getElementById('stname').value,designation:document.getElementById('stdesig').value,department:document.getElementById('stdept').value,mobile:document.getElementById('stmob').value,role:document.getElementById('strole').value})}).then(()=>{this.reset();document.getElementById('stid').value='';loadStaff();});};
+
+// ==================== INIT ====================
+loadAY();loadCourses();loadSubjects();loadBlocks();loadRooms();loadStaff();
+</script>
+{% endblock %}

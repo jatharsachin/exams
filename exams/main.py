@@ -1,8 +1,7 @@
 """
-SPPU Exam Management System - Flask Web Application
-College: SPPU Affiliated College
+Exam Management Pro - Flask Web Application
+BJ College, Ale - Affiliated to SPPU
 Run: python main.py  →  http://localhost:5000
-Package as EXE: pyinstaller --onefile --add-data "templates:templates" --add-data "static:static" main.py
 """
 
 import sys, os, io, webbrowser, threading, time
@@ -21,6 +20,71 @@ init_db()
 @app.route("/")
 def index():
     return render_template("dashboard.html")
+
+# ---- Masters (Unified) ----
+@app.route("/masters")
+def masters_page():
+    return render_template("masters.html")
+
+# ---- Academic Years & Terms ----
+@app.route("/api/acadyears")
+def api_acadyears():
+    rows = query("""
+        SELECT a.id, a.name, a.start_date, a.end_date, a.is_active,
+               GROUP_CONCAT(t.name) as terms_list
+        FROM academic_years a LEFT JOIN terms t ON a.id = t.acad_year_id
+        GROUP BY a.id ORDER BY a.name DESC
+    """)
+    return jsonify(rows)
+
+@app.route("/api/acadyears/save", methods=["POST"])
+def api_acadyears_save():
+    d = request.json
+    try:
+        if d.get("id"):
+            update("academic_years", {"name": d["name"], "start_date": d.get("start_date", ""), "end_date": d.get("end_date", ""), "is_active": d.get("is_active", 0)}, int(d["id"]))
+        else:
+            insert("academic_years", {"name": d["name"], "start_date": d.get("start_date", ""), "end_date": d.get("end_date", ""), "is_active": 0})
+        return jsonify({"ok": True})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 400
+
+@app.route("/api/acadyears/delete/<int:aid>", methods=["DELETE"])
+def api_acadyears_delete(aid):
+    delete("academic_years", aid)
+    return jsonify({"ok": True})
+
+@app.route("/api/acadyears/activate/<int:aid>", methods=["POST"])
+def api_acadyears_activate(aid):
+    execute("UPDATE academic_years SET is_active=0")
+    execute("UPDATE academic_years SET is_active=1 WHERE id=?", (aid,))
+    return jsonify({"ok": True})
+
+@app.route("/api/terms")
+def api_terms():
+    aid = request.args.get("acadyear_id", "")
+    if aid:
+        rows = query("SELECT t.*, a.name as year_name FROM terms t JOIN academic_years a ON t.acad_year_id=a.id WHERE t.acad_year_id=? ORDER BY t.code", (aid,))
+    else:
+        rows = query("SELECT t.*, a.name as year_name FROM terms t JOIN academic_years a ON t.acad_year_id=a.id ORDER BY a.name, t.code")
+    return jsonify(rows)
+
+@app.route("/api/terms/save", methods=["POST"])
+def api_terms_save():
+    d = request.json
+    try:
+        if d.get("id"):
+            update("terms", {"name": d["name"], "code": d["code"], "acad_year_id": int(d["acad_year_id"])}, int(d["id"]))
+        else:
+            insert("terms", {"name": d["name"], "code": d["code"], "acad_year_id": int(d["acad_year_id"])})
+        return jsonify({"ok": True})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 400
+
+@app.route("/api/terms/delete/<int:tid>", methods=["DELETE"])
+def api_terms_delete(tid):
+    delete("terms", tid)
+    return jsonify({"ok": True})
 
 # ---- Courses ----
 @app.route("/courses")
