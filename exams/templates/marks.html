@@ -1,0 +1,16 @@
+{% extends "base.html" %}{% block title %}| Marks{% endblock %}
+{% block content %}
+<h4 class="mb-3 pt-2"><i class="bi bi-pencil-square me-2"></i>Internal Marks Entry</h4>
+<div class="row g-2 mb-3">
+    <div class="col-4"><select class="form-select" id="msubj" onchange="loadMarks()"><option value="">Select Subject</option></select></div>
+    <div class="col-2"><button class="btn btn-primary btn-sm" onclick="saveAllMarks()">Save All</button></div>
+    <div class="col-2"><button class="btn btn-success btn-sm" onclick="exportMarks()">Export Excel</button></div>
+</div>
+<div id="marksTable" class="table-responsive"></div>
+<script>
+fetch('/api/seating/subjects').then(r=>r.json()).then(data=>{let h='<option value="">Select</option>';data.forEach(s=>{h+=`<option value="${s.subject_code}">${s.subject_code} - ${s.subject_name||''}</option>`;});document.getElementById('msubj').innerHTML=h;});
+function loadMarks(){let code=document.getElementById('msubj').value;if(!code)return;fetch('/api/marks/load?code='+code).then(r=>r.json()).then(data=>{let h='<table class="table table-sm table-bordered"><thead><tr><th>PRN</th><th>Student</th><th>Theory IA</th><th>Practical</th><th>Oral</th><th>Project</th><th>TW</th><th>Att%</th><th>Eligible</th></tr></thead><tbody>';data.forEach(m=>{h+=`<tr><td>${m.prn}</td><td>${m.student_name}</td><td><input class="form-control form-control-sm" style="width:60px" value="${m.theory_ia}" data-prn="${m.prn}" data-field="theory_ia"></td><td><input class="form-control form-control-sm" style="width:60px" value="${m.practical}" data-prn="${m.prn}" data-field="practical"></td><td><input class="form-control form-control-sm" style="width:60px" value="${m.oral}" data-prn="${m.prn}" data-field="oral"></td><td><input class="form-control form-control-sm" style="width:60px" value="${m.project}" data-prn="${m.prn}" data-field="project"></td><td><input class="form-control form-control-sm" style="width:60px" value="${m.termwork}" data-prn="${m.prn}" data-field="termwork"></td><td><input class="form-control form-control-sm" style="width:60px" value="${m.attendance_pct}" data-prn="${m.prn}" data-field="attendance_pct"></td><td><span class="badge bg-${m.eligible=='Yes'?'success':'danger'}">${m.eligible}</span></td></tr>`;});h+='</tbody></table>';document.getElementById('marksTable').innerHTML=h;});}
+function saveAllMarks(){let code=document.getElementById('msubj').value;if(!code)return;let marks=[];document.querySelectorAll('#marksTable input').forEach(inp=>{marks.push({prn:inp.dataset.prn,subject_code:code,id:inp.dataset.id||0,field:inp.dataset.field,value:inp.value});});fetch('/api/marks/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({marks:marks.map(m=>({[m.field]:m.value,prn:m.prn,subject_code:m.subject_code,id:m.id}))})}).then(()=>alert('Saved'));}
+function exportMarks(){let code=document.getElementById('msubj').value;window.open('/api/reports/export/marks?code='+code);}
+</script>
+{% endblock %}

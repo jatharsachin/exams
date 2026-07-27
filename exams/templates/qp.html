@@ -1,0 +1,22 @@
+{% extends "base.html" %}{% block title %}| QP Management{% endblock %}
+{% block content %}
+<h4 class="mb-3 pt-2"><i class="bi bi-file-text me-2"></i>Question Paper Management</h4>
+<div class="card mb-3"><div class="card-body">
+    <div class="row g-2">
+        <div class="col-3"><input class="form-control form-control-sm" id="qpsubj" placeholder="Subject Code"></div>
+        <div class="col-2"><input class="form-control form-control-sm" id="qpdate" placeholder="Date"></div>
+        <div class="col-2"><input class="form-control form-control-sm" id="qptotal" placeholder="Total Received" type="number"></div>
+        <div class="col-2"><input class="form-control form-control-sm" id="qpsealed" placeholder="Sealed Packs" type="number"></div>
+        <div class="col-2"><select class="form-select form-select-sm" id="qpsess"><option value="1">Morning</option><option value="2">Afternoon</option></select></div>
+        <div class="col-1"><button class="btn btn-primary btn-sm" onclick="saveQP()">Add</button></div>
+    </div>
+</div></div>
+<table class="table table-bordered table-sm"><thead><tr><th>Subject</th><th>Date</th><th>Received</th><th>Sealed</th><th>Opened</th><th>Distributed</th><th>Balance</th><th>Action</th></tr></thead><tbody id="qpbody"></tbody></table>
+<script>
+function loadQP(){fetch('/api/qp').then(r=>r.json()).then(data=>{let h='';data.forEach(q=>{h+=`<tr><td><code>${q.subject_code}</code></td><td>${q.exam_date}</td><td>${q.total_received}</td><td>${q.sealed_packs}</td><td>${q.opened_packs}</td><td>${q.distributed}</td><td>${q.balance}</td><td><button class="btn btn-sm btn-success" onclick="distributeQP(${q.id})">Distribute</button> <button class="btn btn-sm btn-danger" onclick="delQP(${q.id})">Del</button></td></tr>`;});document.getElementById('qpbody').innerHTML=h||'<tr><td colspan="8" class="text-muted">No entries</td></tr>';});}
+function saveQP(){fetch('/api/qp/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({subject_code:document.getElementById('qpsubj').value,exam_date:document.getElementById('qpdate').value,session_id:document.getElementById('qpsess').value,total_received:document.getElementById('qptotal').value,sealed_packs:document.getElementById('qpsealed').value})}).then(()=>loadQP());}
+function distributeQP(id){fetch('/api/qp/distribute/'+id,{method:'POST'}).then(r=>r.json()).then(d=>{alert(d.ok?'Distributed to '+d.rooms+' rooms ('+d.distributed+' copies)':d.error);loadQP();});}
+function delQP(id){if(confirm('Delete?'))fetch('/api/qp/delete/'+id,{method:'DELETE'}).then(()=>loadQP());}
+loadQP();
+</script>
+{% endblock %}

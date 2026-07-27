@@ -1,0 +1,32 @@
+{% extends "base.html" %}{% block title %}| Dashboard{% endblock %}
+{% block content %}
+<h4 class="mb-4 pt-2"><i class="bi bi-speedometer2 me-2"></i>Exam Dashboard - Daily Summary</h4>
+
+<div id="loading" class="text-center py-5"><div class="spinner-border"></div><p class="mt-2">Loading...</p></div>
+<div id="dashboard"></div>
+
+<script>
+fetch('/api/dashboard').then(r=>r.json()).then(data=>{
+    document.getElementById('loading').style.display='none';
+    let html='';
+    if(!data.dates.length){ html='<div class="alert alert-warning">No exam timetable data. <a href="/import">Import timetable first</a>.</div>'; }
+    else {
+        html+=`<div class="row mb-3">`;
+        html+=`<div class="col-4"><div class="stat-card text-center"><div style="color:#1a237e" class="value">${data.grand_total_papers}</div><div class="label">Total Papers</div></div></div>`;
+        html+=`<div class="col-4"><div class="stat-card text-center"><div style="color:#2e7d32" class="value">${data.grand_total_students}</div><div class="label">Total Students</div></div></div>`;
+        html+=`<div class="col-4"><div class="stat-card text-center"><div style="color:#c62828" class="value">${data.dates.length}</div><div class="label">Exam Days</div></div></div></div>`;
+        data.dates.forEach(day=>{
+            html+=`<div class="card mb-3"><div class="card-header"><i class="bi bi-calendar3 me-2"></i><strong>${day.date}</strong> | ${day.day_papers} Papers | ${day.day_students} Students</div><div class="card-body p-2">`;
+            day.sessions.forEach(sess=>{
+                html+=`<div class="mb-2"><span class="badge bg-secondary">${sess.name} (${sess.time})</span> <small class="text-muted">${sess.paper_count} papers</small>`;
+                html+=`<table class="table table-sm table-bordered mt-1 mb-0"><thead><tr><th>Sub Code</th><th>Subject</th><th>Students</th><th>Rooms</th></tr></thead><tbody>`;
+                sess.papers.forEach(p=>{ html+=`<tr><td><code>${p.code}</code></td><td>${p.name}</td><td class="text-center">${p.students}</td><td><small>${p.rooms}</small></td></tr>`; });
+                html+=`</tbody></table></div>`;
+            });
+            html+=`</div></div>`;
+        });
+    }
+    document.getElementById('dashboard').innerHTML=html;
+});
+</script>
+{% endblock %}

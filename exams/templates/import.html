@@ -1,0 +1,38 @@
+{% extends "base.html" %}{% block title %}| Import{% endblock %}
+{% block content %}
+<h4 class="mb-3 pt-2"><i class="bi bi-upload me-2"></i>Import SPPU Data</h4>
+<div class="row"><div class="col-6">
+<div class="card mb-3"><div class="card-header">Timetable</div><div class="card-body">
+    <div class="row g-2 mb-2">
+        <div class="col-5"><input class="form-control form-control-sm" id="ttcode" placeholder="Subject Code"></div>
+        <div class="col-3"><input class="form-control form-control-sm" id="ttdate" placeholder="Date (DD-MM-YYYY)"></div>
+        <div class="col-2"><select class="form-select form-select-sm" id="ttsession"><option value="1">Morning</option><option value="2">Afternoon</option></select></div>
+        <div class="col-2"><button class="btn btn-primary btn-sm w-100" onclick="addTT()">Add</button></div>
+    </div>
+    <div class="mb-2"><input type="file" class="form-control form-control-sm" id="ttfile" accept=".csv,.xlsx"><button class="btn btn-sm btn-outline-secondary mt-1" onclick="uploadTT()">Upload File</button></div>
+    <table class="table table-sm table-bordered"><thead><tr><th>Sub Code</th><th>Date</th><th>Session</th><th></th></tr></thead><tbody id="ttbody"></tbody></table>
+    <button class="btn btn-sm btn-danger" onclick="clearTT()">Clear All</button>
+    <button class="btn btn-sm btn-success" onclick="loadDemoTT()">Load Demo TT</button>
+</div></div></div><div class="col-6">
+<div class="card mb-3"><div class="card-header">Namelist</div><div class="card-body">
+    <div class="mb-2"><input type="file" class="form-control form-control-sm" id="nlfile" accept=".csv,.xlsx"><button class="btn btn-sm btn-outline-secondary mt-1" onclick="uploadNL()">Upload File</button></div>
+    <div class="alert alert-info small py-1">CSV/Excel: PRN, Student Name, Course Code, Semester, Subject Code, Exam Date</div>
+    <div id="nlcount" class="mb-2 fw-bold"></div>
+    <button class="btn btn-sm btn-danger" onclick="clearNL()">Clear All</button>
+    <button class="btn btn-sm btn-success" onclick="loadDemoNL()">Load Demo Namelist</button>
+    <button class="btn btn-sm btn-primary" onclick="loadDemoFull()">Load All Demo Data</button>
+</div></div></div>
+<script>
+function loadTT(){fetch('/api/timetable').then(r=>r.json()).then(data=>{let h='';data.forEach(t=>{h+=`<tr><td><code>${t.subject_code}</code></td><td>${t.exam_date}</td><td>${t.session_name}</td><td><button class="btn btn-sm text-danger" onclick="delTT(${t.id})">&times;</button></td></tr>`;});document.getElementById('ttbody').innerHTML=h||'<tr><td colspan="4" class="text-muted">No entries</td></tr>';});}
+function addTT(){let code=document.getElementById('ttcode').value.trim();let dt=document.getElementById('ttdate').value.trim();if(!code||!dt)return alert('Fill both');fetch('/api/timetable/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({subject_code:code,exam_date:dt,session_id:document.getElementById('ttsession').value})}).then(()=>{loadTT();document.getElementById('ttcode').value='';});}
+function delTT(id){fetch('/api/timetable/delete/'+id,{method:'DELETE'}).then(()=>loadTT());}
+function uploadTT(){let f=document.getElementById('ttfile').files[0];if(!f)return;let fd=new FormData();fd.append('file',f);fd.append('session_id',document.getElementById('ttsession').value);fetch('/api/timetable/upload',{method:'POST',body:fd}).then(r=>r.json()).then(d=>{alert('Uploaded '+d.count);loadTT();});}
+function clearTT(){if(confirm('Clear all?'))fetch('/api/timetable/clear',{method:'POST'}).then(()=>loadTT());}
+function uploadNL(){let f=document.getElementById('nlfile').files[0];if(!f)return;let fd=new FormData();fd.append('file',f);fetch('/api/namelist/upload',{method:'POST',body:fd}).then(r=>r.json()).then(d=>{alert('Uploaded '+d.count);});}
+function clearNL(){if(confirm('Clear all?'))fetch('/api/namelist/clear',{method:'POST'}).then(()=>document.getElementById('nlcount').innerHTML='');}
+function loadDemoTT(){fetch('/api/demo/timetable',{method:'POST'}).then(r=>r.json()).then(d=>{alert(d.count+' papers loaded');loadTT();});}
+function loadDemoNL(){fetch('/api/demo/namelist',{method:'POST'}).then(r=>r.json()).then(d=>{alert(d.count+' students loaded');});}
+function loadDemoFull(){fetch('/api/demo/full',{method:'POST'}).then(r=>r.json()).then(d=>{alert(d.msg);loadTT();});}
+loadTT();
+</script>
+{% endblock %}

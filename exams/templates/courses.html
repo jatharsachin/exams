@@ -1,0 +1,23 @@
+{% extends "base.html" %}{% block title %}| Courses{% endblock %}
+{% block content %}
+<h4 class="mb-3 pt-2"><i class="bi bi-book me-2"></i>Courses</h4>
+<div class="card mb-3"><div class="card-body">
+    <form id="courseForm" class="row g-2">
+        <input type="hidden" id="cid">
+        <div class="col-2"><input class="form-control" id="code" placeholder="Code" required></div>
+        <div class="col-4"><input class="form-control" id="name" placeholder="Course Name" required></div>
+        <div class="col-3"><select class="form-select" id="faculty"><option>Science & Technology</option><option>Commerce & Management</option><option>Humanities</option><option>Inter-Disciplinary</option></select></div>
+        <div class="col-1"><input class="form-control" id="dur" value="3" type="number"></div>
+        <div class="col-2"><button class="btn btn-primary btn-sm" type="submit">Save</button> <button class="btn btn-danger btn-sm" type="button" onclick="loadDemoSubjs()">Load Demo</button></div>
+    </form>
+</div></div>
+<table class="table table-bordered table-hover"><thead><tr><th>Code</th><th>Name</th><th>Faculty</th><th>Years</th><th>Action</th></tr></thead><tbody id="ctbody"></tbody></table>
+<script>
+function loadCourses(){fetch('/api/courses').then(r=>r.json()).then(data=>{let h='';data.forEach(c=>{h+=`<tr><td>${c.code}</td><td>${c.name}</td><td>${c.faculty}</td><td>${c.duration_years}</td><td><button class="btn btn-sm btn-outline-primary" onclick="editCourse(${c.id})">Edit</button> <button class="btn btn-sm btn-outline-danger" onclick="delCourse(${c.id})">Del</button></td></tr>`;});document.getElementById('ctbody').innerHTML=h;});}
+function editCourse(id){fetch('/api/courses').then(r=>r.json()).then(data=>{let c=data.find(x=>x.id==id);if(c){document.getElementById('cid').value=c.id;document.getElementById('code').value=c.code;document.getElementById('name').value=c.name;document.getElementById('faculty').value=c.faculty;document.getElementById('dur').value=c.duration_years;}});}
+function delCourse(id){if(confirm('Delete?')) fetch('/api/courses/delete/'+id,{method:'DELETE'}).then(()=>loadCourses());}
+document.getElementById('courseForm').onsubmit=function(e){e.preventDefault();fetch('/api/courses/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:document.getElementById('cid').value||null,code:document.getElementById('code').value,name:document.getElementById('name').value,faculty:document.getElementById('faculty').value,duration_years:document.getElementById('dur').value})}).then(()=>{this.reset();loadCourses();});};
+function loadDemoSubjs(){fetch('/api/demo/subjects',{method:'POST'}).then(()=>{alert('Demo courses+subjects loaded');loadCourses();});}
+loadCourses();
+</script>
+{% endblock %}

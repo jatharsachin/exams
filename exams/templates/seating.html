@@ -1,0 +1,20 @@
+{% extends "base.html" %}{% block title %}| Seating{% endblock %}
+{% block content %}
+<h4 class="mb-3 pt-2"><i class="bi bi-grid me-2"></i>Block Arrangement - Seating Plan</h4>
+<div class="row g-2 mb-3">
+    <div class="col-4"><select class="form-select" id="sesubj"><option value="">Select Subject</option></select></div>
+    <div class="col-2"><input class="form-control" id="sedate" placeholder="Date"></div>
+    <div class="col-2"><select class="form-select" id="sesession"><option value="1">Morning</option><option value="2">Afternoon</option></select></div>
+    <div class="col-2"><button class="btn btn-primary btn-sm" onclick="generateSeating()">Generate</button></div>
+    <div class="col-2"><button class="btn btn-success btn-sm" onclick="generateAll()">Generate All</button></div>
+</div>
+<div id="result" class="mb-3"></div>
+<div id="studentList"></div>
+<script>
+fetch('/api/seating/subjects').then(r=>r.json()).then(data=>{let h='<option value="">-- Subject --</option>';data.forEach(s=>{h+=`<option value="${s.subject_code}">${s.subject_code} - ${s.subject_name||''}</option>`;});document.getElementById('sesubj').innerHTML=h;});
+fetch('/api/util/dates').then(r=>r.json()).then(d=>{if(d.length)document.getElementById('sedate').value=d[0];});
+function generateSeating(){let code=document.getElementById('sesubj').value;let dt=document.getElementById('sedate').value;let sess=document.getElementById('sesession').value;fetch('/api/seating/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({subject_code:code,exam_date:dt,session_id:sess})}).then(r=>r.json()).then(d=>{if(d.ok){let h=`<div class="alert alert-success">Seating generated: <b>${d.total}</b> students in <b>${d.rooms.length}</b> rooms</div><table class="table table-sm table-bordered"><thead><tr><th>Room</th><th>Capacity</th><th>Allotted</th><th>Occ%</th></tr></thead><tbody>`;d.rooms.forEach(r=>{h+=`<tr><td>${r.room}</td><td>${r.capacity}</td><td>${r.allotted}</td><td>${r.occ_pct}%</td></tr>`;});h+=`</tbody></table>`;document.getElementById('result').innerHTML=h;loadStudents(code,dt,sess);}else{alert(d.error);}});}
+function generateAll(){if(confirm('Generate seating for ALL subjects?'))fetch('/api/seating/generate_all',{method:'POST'}).then(r=>r.json()).then(d=>{alert('Generated for '+d.total+' students');});}
+function loadStudents(code,dt,sess){fetch(`/api/seating/view?code=${code}&date=${dt}&session=${sess}`).then(r=>r.json()).then(data=>{let h='';if(data.length){h=`<table class="table table-sm table-bordered"><thead><tr><th>PRN</th><th>Student</th><th>Room</th><th>Seat</th><th>Bench</th></tr></thead><tbody>`;data.forEach(s=>{h+=`<tr><td>${s.prn}</td><td>${s.student_name}</td><td>${s.room}</td><td>${s.seat_no}</td><td>${s.bench_no}</td></tr>`;});h+=`</tbody></table>`;}document.getElementById('studentList').innerHTML=h;});}
+</script>
+{% endblock %}

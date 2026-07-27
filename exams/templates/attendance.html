@@ -1,0 +1,20 @@
+{% extends "base.html" %}{% block title %}| Attendance{% endblock %}
+{% block content %}
+<h4 class="mb-3 pt-2"><i class="bi bi-check-square me-2"></i>Attendance Sheets</h4>
+<div class="row g-2 mb-3">
+    <div class="col-3"><select class="form-select" id="adate"></select></div>
+    <div class="col-3"><select class="form-select" id="aroom"><option value="">Select Room</option></select></div>
+    <div class="col-2"><button class="btn btn-primary btn-sm" onclick="loadAttendance()">Load</button></div>
+    <div class="col-2"><button class="btn btn-success btn-sm" onclick="saveAttendance()">Save</button></div>
+    <div class="col-2"><button class="btn btn-warning btn-sm" onclick="markAll('Present')">All Present</button></div>
+</div>
+<table class="table table-sm table-bordered"><thead><tr><th>PRN</th><th>Student</th><th>Seat</th><th>Status</th></tr></thead><tbody id="atbody"></tbody></table>
+<script>
+fetch('/api/util/dates').then(r=>r.json()).then(d=>{let h='';d.forEach(x=>h+=`<option>${x}</option>`);document.getElementById('adate').innerHTML=h;if(d.length){document.getElementById('adate').value=d[0];loadRooms();}});
+document.getElementById('adate').onchange=loadRooms;
+function loadRooms(){fetch(`/api/attendance/rooms?date=${document.getElementById('adate').value}`).then(r=>r.json()).then(data=>{let h='';data.forEach(r=>h+=`<option>${r}</option>`);document.getElementById('aroom').innerHTML=h;});}
+function loadAttendance(){let d=document.getElementById('adate').value;let r=document.getElementById('aroom').value;fetch(`/api/attendance/load?date=${d}&room=${r}`).then(r=>r.json()).then(data=>{let h='';data.forEach(s=>{h+=`<tr><td>${s.prn}</td><td>${s.student_name}</td><td>${s.seat_no}</td><td><select class="form-select form-select-sm" onchange="this.dataset.id=${s.id}">${['Present','Absent','UFM'].map(st=>`<option value="${st}" ${s.status==st?'selected':''}>${st}</option>`).join('')}</select></td></tr>`;});document.getElementById('atbody').innerHTML=h||'<tr><td colspan="4">No data - generate seating first</td></tr>';});}
+function saveAttendance(){let data=[];document.querySelectorAll('#atbody select').forEach(sel=>{data.push({id:parseInt(sel.dataset.id),status:sel.value});});fetch('/api/attendance/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({attendance:data})}).then(()=>alert('Saved '+data.length+' records'));}
+function markAll(s){document.querySelectorAll('#atbody select').forEach(sel=>sel.value=s);}
+</script>
+{% endblock %}

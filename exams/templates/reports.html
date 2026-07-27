@@ -1,0 +1,21 @@
+{% extends "base.html" %}{% block title %}| Reports{% endblock %}
+{% block content %}
+<h4 class="mb-3 pt-2"><i class="bi bi-graph-up me-2"></i>Reports</h4>
+<div class="row g-3">
+    <div class="col-6"><div class="card"><div class="card-header">Subject-wise Summary</div><div class="card-body"><button class="btn btn-sm btn-primary" onclick="genSubjSummary()">Generate</button><button class="btn btn-sm btn-outline-secondary ms-2" onclick="window.open('/api/reports/export/subject_summary')">Export</button><div id="subjSummary" class="mt-2 table-responsive"></div></div></div></div>
+    <div class="col-6"><div class="card"><div class="card-header">Day-wise Summary</div><div class="card-body"><button class="btn btn-sm btn-primary" onclick="genDaySummary()">Generate</button><div id="daySummary" class="mt-2 table-responsive"></div></div></div></div>
+    <div class="col-6"><div class="card"><div class="card-header">Staff Duty Report</div><div class="card-body"><button class="btn btn-sm btn-primary" onclick="genDutyReport()">Generate</button><button class="btn btn-sm btn-outline-secondary ms-2" onclick="window.open('/api/reports/export/duty_summary')">Export</button><div id="dutReport" class="mt-2 table-responsive"></div></div></div></div>
+    <div class="col-6"><div class="card"><div class="card-header">Quick Exports</div><div class="card-body">
+        <button class="btn btn-sm btn-outline-primary m-1" onclick="window.open('/api/reports/export/namelist')">Namelist</button>
+        <button class="btn btn-sm btn-outline-primary m-1" onclick="window.open('/api/reports/export/seating')">Seating Report</button>
+        <button class="btn btn-sm btn-outline-primary m-1" onclick="window.open('/api/reports/export/marks')">Internal Marks</button>
+        <button class="btn btn-sm btn-outline-primary m-1" onclick="window.open('/api/reports/export/staff')">Staff List</button>
+    </div></div></div>
+</div>
+<script>
+function tbl(data,cols){let h='<table class="table table-sm table-bordered"><thead><tr>';cols.forEach(c=>h+=`<th>${c}</th>`);h+='</tr></thead><tbody>';data.forEach(r=>{h+='<tr>';cols.forEach(c=>h+=`<td>${r[c]||''}</td>`);h+='</tr>';});h+='</tbody></table>';return h;}
+function genSubjSummary(){fetch('/api/reports/subject_summary').then(r=>r.json()).then(d=>{document.getElementById('subjSummary').innerHTML=tbl(d,['subject_code','sname','total','seated','unseated','rooms']);});}
+function genDaySummary(){fetch('/api/reports/day_summary').then(r=>r.json()).then(d=>{document.getElementById('daySummary').innerHTML=tbl(d,['exam_date','session_name','papers','students','rooms']);});}
+function genDutyReport(){fetch('/api/reports/duty_summary').then(r=>r.json()).then(d=>{document.getElementById('dutReport').innerHTML=tbl(d,['staff_name','role','exam_date','session_name','room','subject_code']);});}
+</script>
+{% endblock %}
