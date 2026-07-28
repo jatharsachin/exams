@@ -1,18 +1,17 @@
 {% extends "base.html" %}{% block title %}| Masters{% endblock %}
 {% block content %}
 <h4 class="mb-3 pt-2"><i class="bi bi-database-gear me-2"></i>Masters</h4>
-<ul class="nav nav-tabs mb-3" id="masterTabs" role="tablist">
-    <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-year">Academic Year & Term</button></li>
-    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-course">Courses</button></li>
-    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-subject">Subjects</button></li>
-    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-room">Rooms & Blocks</button></li>
-    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-staff">Staff</button></li>
-    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-student">Students <span class="badge bg-danger ms-1">New</span></button></li>
+<ul class="nav nav-tabs mb-3" id="masterTabs">
+    <li class="nav-item"><a class="nav-link active" href="#" onclick="switchTab('tab-year')">Academic Year & Term</a></li>
+    <li class="nav-item"><a class="nav-link" href="#" onclick="switchTab('tab-course')">Courses</a></li>
+    <li class="nav-item"><a class="nav-link" href="#" onclick="switchTab('tab-subject')">Subjects</a></li>
+    <li class="nav-item"><a class="nav-link" href="#" onclick="switchTab('tab-room')">Rooms & Blocks</a></li>
+    <li class="nav-item"><a class="nav-link" href="#" onclick="switchTab('tab-staff')">Staff</a></li>
+    <li class="nav-item"><a class="nav-link" href="#" onclick="switchTab('tab-student')">Students <span class="badge bg-danger ms-1">New</span></a></li>
 </ul>
 
-<div class="tab-content">
 <!-- Academic Year & Terms -->
-<div class="tab-pane fade show active" id="tab-year">
+<div class="tab-pane" id="tab-year" style="display:block">
 <div class="row"><div class="col-5"><div class="card mb-3"><div class="card-header fw-semibold">Academic Year</div><div class="card-body">
     <div class="row g-2 mb-2">
         <div class="col-5"><input class="form-control form-control-sm" id="ayname" placeholder="Year (e.g. 2025-26)"></div>
@@ -33,7 +32,7 @@
 </div>
 
 <!-- Courses -->
-<div class="tab-pane fade" id="tab-course">
+<div class="tab-pane" id="tab-course" style="display:none">
 <div class="card mb-3"><div class="card-body">
     <form id="courseForm" class="row g-2">
         <input type="hidden" id="cid">
@@ -48,7 +47,7 @@
 </div>
 
 <!-- Subjects -->
-<div class="tab-pane fade" id="tab-subject">
+<div class="tab-pane" id="tab-subject" style="display:none">
 <div class="card mb-3"><div class="card-body">
     <form id="subjForm" class="row g-2">
         <input type="hidden" id="sid">
@@ -65,7 +64,7 @@
 </div>
 
 <!-- Rooms -->
-<div class="tab-pane fade" id="tab-room">
+<div class="tab-pane" id="tab-room" style="display:none">
 <div class="row"><div class="col-4"><div class="card mb-3"><div class="card-header fw-semibold">Blocks</div><div class="card-body">
     <div class="mb-2"><input class="form-control form-control-sm" id="bname" placeholder="Block Name"><input class="form-control form-control-sm mt-1" id="bfloor" placeholder="Floor"></div>
     <button class="btn btn-success btn-sm" onclick="saveBlock()">+ Add Block</button>
@@ -84,8 +83,8 @@
 </div>
 
 <!-- Staff -->
-<div class="tab-pane fade" id="tab-staff">
-<div class="card mb-3"><div class="card-header fw-semibold d-flex justify-content-between"><span>Add / Edit Staff</span><button class="btn btn-sm btn-outline-secondary" onclick="loadStaff()"><i class="bi bi-arrow-clockwise"></i> Refresh</button></div><div class="card-body">
+<div class="tab-pane" id="tab-staff" style="display:none">
+<div class="card mb-3"><div class="card-header fw-semibold d-flex justify-content-between"><span>Add / Edit Staff</span><button class="btn btn-sm btn-outline-secondary" onclick="loadStaff()">Refresh</button></div><div class="card-body">
     <form id="staffForm" class="row g-2">
         <input type="hidden" id="stid">
         <div class="col-3"><input class="form-control form-control-sm" id="stname" placeholder="Full Name" required></div>
@@ -96,11 +95,11 @@
         <div class="col-1"><button class="btn btn-success btn-sm w-100" type="submit">+ Add</button></div>
     </form>
 </div></div>
-<table class="table table-sm table-bordered table-hover"><thead><tr><th>Name</th><th>Designation</th><th>Dept</th><th>Mobile</th><th>Role</th><th></th></tr></thead><tbody id="stfbody"></tbody></table>
+<table class="table table-sm table-bordered table-hover"><thead><tr><th>Name</th><th>Designation</th><th>Dept</th><th>Mobile</th><th>Role</th><th></th></tr></thead><tbody id="stfbody"><tr><td colspan="6" class="text-muted text-center">Loading staff data...</td></tr></tbody></table>
 </div>
 
 <!-- Students -->
-<div class="tab-pane fade" id="tab-student">
+<div class="tab-pane" id="tab-student" style="display:none">
 <div class="card mb-3"><div class="card-body">
     <div class="row g-2 mb-3">
         <div class="col-2"><input class="form-control form-control-sm" id="stuprn" placeholder="PRN / Seat No" required></div>
@@ -121,11 +120,25 @@
 <table class="table table-sm table-bordered table-hover"><thead><tr><th>PRN</th><th>Name</th><th>Course</th><th>Subject</th><th>Date</th><th></th></tr></thead><tbody id="stubody"></tbody></table>
 </div>
 
-</div><!-- tab-content -->
 {% endblock %}
 
 {% block scripts %}
 <script>
+// ==================== SIMPLE TAB SWITCH ====================
+function switchTab(tabId){
+    document.querySelectorAll('.tab-pane').forEach(p=>p.style.display='none');
+    document.querySelectorAll('#masterTabs .nav-link').forEach(l=>l.classList.remove('active'));
+    document.getElementById(tabId).style.display='block';
+    document.querySelector('#masterTabs a[onclick*=\"'+tabId+'\"]').classList.add('active');
+    // Reload data for the selected tab
+    if(tabId==='tab-year')loadAY();
+    if(tabId==='tab-course')loadCourses();
+    if(tabId==='tab-subject')loadSubjects();
+    if(tabId==='tab-room'){loadBlocks();loadRooms();}
+    if(tabId==='tab-staff')loadStaff();
+    if(tabId==='tab-student')loadStudents();
+}
+
 // ==================== ACADEMIC YEAR ====================
 function loadAY(){fetch('/api/acadyears').then(r=>r.json()).then(data=>{let h='';data.forEach(y=>{h+=`<tr><td>${y.name}</td><td>${y.terms_list||'--'}</td><td>${y.is_active?'<span class="badge bg-success">Active</span>':'<button class="btn btn-sm btn-outline-success" onclick="activateAY(${y.id})">Activate</button>'}</td><td><button class="btn btn-sm btn-outline-danger" onclick="delAY(${y.id})">Del</button></td></tr>`;});document.getElementById('ayTable').querySelector('tbody').innerHTML=h;let opts='';data.forEach(y=>opts+=`<option value="${y.id}">${y.name}</option>`);document.getElementById('tmyear').innerHTML=opts;loadTerms();});}
 function saveAY(){let n=document.getElementById('ayname').value.trim();if(!n)return;fetch('/api/acadyears/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:n,start_date:document.getElementById('aystart').value})}).then(r=>r.json()).then(d=>{if(d.ok){document.getElementById('ayname').value='';document.getElementById('aystart').value='';loadAY();}});}
@@ -159,10 +172,65 @@ function delRoom(id){if(confirm('Delete?'))fetch('/api/rooms/delete/'+id,{method
 document.getElementById('roomForm').onsubmit=function(e){e.preventDefault();let isNew=!document.getElementById('rid').value;fetch('/api/rooms/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:document.getElementById('rid').value||null,name:document.getElementById('rname').value,block_name:document.getElementById('rblock').value,capacity:document.getElementById('rcap').value,bench_count:document.getElementById('rbench').value})}).then(()=>{if(isNew)this.reset();document.getElementById('rid').value='';loadRooms();});};
 
 // ==================== STAFF ====================
-function loadStaff(){fetch('/api/staff').then(r=>r.json()).then(d=>{let h='';if(!d.length)h='<tr><td colspan="6" class="text-muted">No staff added yet. Use form above to add.</td></tr>';else d.forEach(s=>h+=`<tr><td>${s.name}</td><td>${s.designation||''}</td><td>${s.department||''}</td><td>${s.mobile||''}</td><td><span class="badge bg-${s.role=='Principal'?'danger':s.role=='CEO'?'warning text-dark':'primary'}">${s.role}</span></td><td><button class="btn btn-sm btn-outline-primary" onclick="editStaff(${s.id})">Edit</button> <button class="btn btn-sm btn-outline-danger" onclick="delStaff(${s.id})">Del</button></td></tr>`);document.getElementById('stfbody').innerHTML=h;}).catch(e=>{document.getElementById('stfbody').innerHTML='<tr><td colspan="6" class="text-danger">Error loading: '+e+'</td></tr>';});}
-function editStaff(id){fetch('/api/staff').then(r=>r.json()).then(d=>{let s=d.find(x=>x.id==id);if(s){document.getElementById('stid').value=s.id;document.getElementById('stname').value=s.name;document.getElementById('stdesig').value=s.designation||'';document.getElementById('stdept').value=s.department||'';document.getElementById('stmob').value=s.mobile||'';document.getElementById('strole').value=s.role;}});}
-function delStaff(id){if(confirm('Delete?'))fetch('/api/staff/delete/'+id,{method:'DELETE'}).then(()=>loadStaff());}
-document.getElementById('staffForm').onsubmit=function(e){e.preventDefault();let isNew=!document.getElementById('stid').value;fetch('/api/staff/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:document.getElementById('stid').value||null,name:document.getElementById('stname').value,designation:document.getElementById('stdesig').value,department:document.getElementById('stdept').value,mobile:document.getElementById('stmob').value,role:document.getElementById('strole').value})}).then(()=>{if(isNew)this.reset();document.getElementById('stid').value='';loadStaff();});};
+function loadStaff(){
+    console.log('loadStaff called');
+    var tbody = document.getElementById('stfbody');
+    if(!tbody){console.log('stfbody not found!');return;}
+    fetch('/api/staff').then(function(r){return r.json();}).then(function(d){
+        console.log('Staff data received:', d.length);
+        var h='';
+        if(!d.length){
+            h='<tr><td colspan="6" class="text-muted text-center">No staff added yet. Use the form above to add.</td></tr>';
+        } else {
+            d.forEach(function(s){
+                var badgeClass = 'primary';
+                if(s.role==='Principal') badgeClass='danger';
+                else if(s.role==='CEO') badgeClass='warning text-dark';
+                h+='<tr><td>'+s.name+'</td><td>'+(s.designation||'')+'</td><td>'+(s.department||'')+'</td><td>'+(s.mobile||'')+'</td><td><span class="badge bg-'+badgeClass+'">'+s.role+'</span></td><td><button class="btn btn-sm btn-outline-primary" onclick="editStaff('+s.id+')">Edit</button> <button class="btn btn-sm btn-outline-danger" onclick="delStaff('+s.id+')">Del</button></td></tr>';
+            });
+        }
+        tbody.innerHTML=h;
+    }).catch(function(e){
+        console.log('Staff load error:', e);
+        tbody.innerHTML='<tr><td colspan="6" class="text-danger text-center">Error: '+e.message+'</td></tr>';
+    });
+}
+function editStaff(id){
+    fetch('/api/staff').then(function(r){return r.json();}).then(function(d){
+        var s=d.find(function(x){return x.id==id;});
+        if(s){
+            document.getElementById('stid').value=s.id;
+            document.getElementById('stname').value=s.name;
+            document.getElementById('stdesig').value=s.designation||'';
+            document.getElementById('stdept').value=s.department||'';
+            document.getElementById('stmob').value=s.mobile||'';
+            document.getElementById('strole').value=s.role;
+        }
+    });
+}
+function delStaff(id){if(confirm('Delete this staff?'))fetch('/api/staff/delete/'+id,{method:'DELETE'}).then(function(){loadStaff();});}
+document.getElementById('staffForm').onsubmit=function(e){
+    e.preventDefault();
+    var isNew=!document.getElementById('stid').value;
+    var data={
+        id: document.getElementById('stid').value||null,
+        name: document.getElementById('stname').value,
+        designation: document.getElementById('stdesig').value,
+        department: document.getElementById('stdept').value,
+        mobile: document.getElementById('stmob').value,
+        role: document.getElementById('strole').value
+    };
+    var form=this;
+    fetch('/api/staff/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)}).then(function(r){return r.json();}).then(function(d){
+        if(d.ok){
+            if(isNew)form.reset();
+            document.getElementById('stid').value='';
+            loadStaff();
+        } else {
+            alert('Error: '+(d.error||'Unknown'));
+        }
+    });
+};
 
 // ==================== STUDENTS ====================
 function loadStudents(filt){let url='/api/students';if(filt)url+='?course='+filt;fetch(url).then(r=>r.json()).then(data=>{let h='';data.forEach(s=>h+=`<tr><td><code>${s.prn}</code></td><td>${s.student_name}</td><td>${s.course_code||''}</td><td>${s.subject_code||''}</td><td>${s.exam_date||''}</td><td><button class="btn btn-sm btn-outline-danger" onclick="delStudent(${s.id})">Del</button></td></tr>`);document.getElementById('stubody').innerHTML=h||'<tr><td colspan="6" class="text-muted">No students added yet</td></tr>';document.getElementById('stucount').textContent=`(${data.length} students)`;});}
@@ -173,20 +241,7 @@ function clearStudents(){if(confirm('Delete ALL students?')){fetch('/api/student
 document.getElementById('stufilter').onchange=function(){loadStudents(this.value);};
 
 // ==================== INIT ====================
-document.addEventListener('DOMContentLoaded',function(){
-    loadAY();loadCourses();loadSubjects();loadBlocks();loadRooms();loadStaff();loadStudents();
-});
-// Reload data when switching tabs (ensures data is always fresh)
-document.querySelectorAll('#masterTabs button[data-bs-toggle=\"tab\"]').forEach(btn=>{
-    btn.addEventListener('shown.bs.tab',function(e){
-        let target=e.target.getAttribute('data-bs-target');
-        if(target==='#tab-course')loadCourses();
-        if(target==='#tab-subject')loadSubjects();
-        if(target==='#tab-room'){loadBlocks();loadRooms();}
-        if(target==='#tab-staff')loadStaff();
-        if(target==='#tab-student')loadStudents();
-        if(target==='#tab-year')loadAY();
-    });
-});
+loadAY();
+loadCourses();
 </script>
 {% endblock %}
