@@ -9,8 +9,9 @@ from flask import Flask, render_template, request, jsonify, send_file, redirect,
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from database import init_db, get_all, query, insert, update, delete, execute
+from database import init_db, get_all, query, insert, update, delete, execute, backup_db, restore_db, list_backups, db_stats
 from utils import export_to_excel
+import analytics
 
 app = Flask(__name__)
 init_db()
@@ -952,6 +953,54 @@ def api_util_dates():
 @app.route("/api/util/sessions")
 def api_util_sessions():
     return jsonify(get_all("exam_sessions"))
+
+# ---- Database Backup & Health ----
+@app.route("/api/backup", methods=["POST"])
+def api_backup():
+    tag = request.json.get("tag", "") if request.is_json else ""
+    path = backup_db(tag)
+    return jsonify({"ok": True, "file": os.path.basename(path), "path": path})
+
+@app.route("/api/backups")
+def api_backups():
+    return jsonify(list_backups())
+
+@app.route("/api/restore", methods=["POST"])
+def api_restore():
+    path = request.json.get("path", "")
+    if not path or not os.path.exists(path):
+        return jsonify({"ok": False, "error": "Backup file not found"}), 400
+    restore_db(path)
+    return jsonify({"ok": True})
+
+@app.route("/api/db-stats")
+def api_db_stats():
+    return jsonify(db_stats())
+
+# ---- DuckDB Analytics ----
+@app.route("/api/analytics/exam-summary")
+def api_analytics_exam():
+    return jsonify(analytics.exam_summary())
+
+@app.route("/api/analytics/course-stats")
+def api_analytics_course():
+    return jsonify(analytics.course_wise_stats())
+
+@app.route("/api/analytics/staff-workload")
+def api_analytics_workload():
+    return jsonify(analytics.staff_workload())
+
+@app.route("/api/analytics/room-utilization")
+def api_analytics_room():
+    return jsonify(analytics.room_utilization())
+
+@app.route("/api/analytics/attendance")
+def api_analytics_attendance():
+    return jsonify(analytics.attendance_summary())
+
+@app.route("/api/analytics/remuneration")
+def api_analytics_remuneration():
+    return jsonify(analytics.remuneration_summary())
 
 
 def open_browser():

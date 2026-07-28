@@ -5,6 +5,8 @@ SQLite database setup and all CRUD operations
 
 import sqlite3
 import os
+import shutil
+import time
 
 DB_PATH = os.path.join(os.path.dirname(__file__), "sppu_exam.db")
 
@@ -13,6 +15,10 @@ def get_connection():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
+    conn.execute("PRAGMA journal_mode = WAL")
+    conn.execute("PRAGMA synchronous = NORMAL")
+    conn.execute("PRAGMA cache_size = -64000")
+    conn.execute("PRAGMA mmap_size = 268435456")
     return conn
 
 
@@ -284,6 +290,25 @@ def init_db():
                 (9, 'Per Answer Sheet', 10);
         """)
 
+    cursor.executescript("""
+        CREATE INDEX IF NOT EXISTS idx_namelist_prn ON namelist(prn);
+        CREATE INDEX IF NOT EXISTS idx_namelist_course ON namelist(course_id);
+        CREATE INDEX IF NOT EXISTS idx_seating_date ON seating(exam_date);
+        CREATE INDEX IF NOT EXISTS idx_seating_prn ON seating(prn);
+        CREATE INDEX IF NOT EXISTS idx_seating_room ON seating(room_id);
+        CREATE INDEX IF NOT EXISTS idx_staff_duty_date ON staff_duty(exam_date);
+        CREATE INDEX IF NOT EXISTS idx_staff_duty_staff ON staff_duty(staff_id);
+        CREATE INDEX IF NOT EXISTS idx_attendance_seating ON attendance(seating_id);
+        CREATE INDEX IF NOT EXISTS idx_internal_marks_prn ON internal_marks(prn);
+        CREATE INDEX IF NOT EXISTS idx_internal_marks_subj ON internal_marks(subject_code);
+        CREATE INDEX IF NOT EXISTS idx_subjects_course ON subjects(course_id);
+        CREATE INDEX IF NOT EXISTS idx_rooms_block ON rooms(block_id);
+        CREATE INDEX IF NOT EXISTS idx_timetable_date ON timetable(exam_date);
+        CREATE INDEX IF NOT EXISTS idx_qp_inventory_date ON qp_inventory(exam_date);
+        CREATE INDEX IF NOT EXISTS idx_staff_remuneration_staff ON staff_remuneration(staff_id);
+        CREATE INDEX IF NOT EXISTS idx_staff_remuneration_date ON staff_remuneration(exam_date);
+    """)
+
     conn.commit()
     conn.close()
 
@@ -344,3 +369,47 @@ def execute(sql, params=None):
     conn.execute(sql, params or [])
     conn.commit()
     conn.close()
+
+
+# ---------- Backup & Restore ----------
+BACKUP_DIR = os.path.join(os.path.dirname(__file__), "backups")
+
+def backup_db(tag=""):
+    os.makedirs(BACKUP_DIR, exist_ok=True)
+    ts = time.strftime("%Y%m%d_%H%M%S")
+    fname = f"backup_{ts}{'_'+tag if tag else ''}.db"
+    dest = os.path.join(BACKUP_DIR, fname)
+    shutil.copy2(DB_PATH, dest)
+    return dest
+
+def restore_db(backup_path):
+    if not os.path.exists(backup_path):
+        return False
+    shutil.copy2(backup_path, DB_PATH)
+    return True
+
+def list_backups():
+    if not os.path.exists(BACKUP_DIR):
+        return []
+    files = sorted([f for f in os.listdir(BACKUP_DIR) if f.endswith('.db')], reverse=True)
+    return [{"name": f, "path": os.path.join(BACKUP_DIR, f),
+             "size_kb": round(os.path.getsize(os.path.join(BACKUP_DIR, f))/1024, 1),
+             "modified": time.strftime("%Y-%m-%d %H:%M", time.localtime(os.path.getmtime(os.path.join(BACKUP_DIR, f))))} for f in files]
+
+def db_stats():
+    conn = get_connection()
+    tables = ["academic_years","terms","courses","subjects","blocks","rooms","staff",
+              "exam_sessions","timetable","namelist","seating","staff_duty","attendance",
+              "qp_inventory","qp_distribution","internal_marks","duty_heads","remuneration_rates","staff_remuneration","users"]
+    stats = {"total_rows": 0, "db_size_kb": round(os.path.getsize(DB_PATH)/1024, 1),
+             "wal_mode": conn.execute("PRAGMA journal_mode").fetchone()[0],
+             "tables": {}}
+    for t in tables:
+        try:
+            cnt = conn.execute(f"SELECT COUNT(*) FROM {t}").fetchone()[0]
+            stats["tables"][t] = cnt
+            stats["total_rows"] += cnt
+        except:
+            stats["tables"][t] = 0
+    conn.close()
+    return stats

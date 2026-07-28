@@ -1,21 +1,82 @@
 {% extends "base.html" %}{% block title %}| Reports{% endblock %}
 {% block content %}
-<h4 class="mb-3 pt-2"><i class="bi bi-graph-up me-2"></i>Reports</h4>
+<h4 class="mb-3 pt-2"><i class="bi bi-graph-up me-2"></i>Reports & Analytics</h4>
+<ul class="nav nav-tabs mb-3" id="reportTabs" role="tablist">
+    <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-basic">Standard Reports</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-analytics">DuckDB Analytics <span class="badge bg-info ms-1">Fast</span></button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-db">Database Mgmt <span class="badge bg-warning ms-1">Admin</span></button></li>
+</ul>
+<div class="tab-content">
+
+<!-- Tab 1: Standard Reports -->
+<div class="tab-pane fade show active" id="tab-basic">
 <div class="row g-3">
-    <div class="col-6"><div class="card"><div class="card-header">Subject-wise Summary</div><div class="card-body"><button class="btn btn-sm btn-primary" onclick="genSubjSummary()">Generate</button><button class="btn btn-sm btn-outline-secondary ms-2" onclick="window.open('/api/reports/export/subject_summary')">Export</button><div id="subjSummary" class="mt-2 table-responsive"></div></div></div></div>
-    <div class="col-6"><div class="card"><div class="card-header">Day-wise Summary</div><div class="card-body"><button class="btn btn-sm btn-primary" onclick="genDaySummary()">Generate</button><div id="daySummary" class="mt-2 table-responsive"></div></div></div></div>
-    <div class="col-6"><div class="card"><div class="card-header">Staff Duty Report</div><div class="card-body"><button class="btn btn-sm btn-primary" onclick="genDutyReport()">Generate</button><button class="btn btn-sm btn-outline-secondary ms-2" onclick="window.open('/api/reports/export/duty_summary')">Export</button><div id="dutReport" class="mt-2 table-responsive"></div></div></div></div>
-    <div class="col-6"><div class="card"><div class="card-header">Quick Exports</div><div class="card-body">
+    <div class="col-6"><div class="card"><div class="card-header fw-semibold">Subject-wise Summary</div><div class="card-body"><button class="btn btn-sm btn-primary" onclick="genSubjSummary()">Generate</button><button class="btn btn-sm btn-outline-secondary ms-2" onclick="window.open('/api/reports/export/subject_summary')">Export Excel</button><div id="subjSummary" class="mt-2 table-responsive"></div></div></div></div>
+    <div class="col-6"><div class="card"><div class="card-header fw-semibold">Day-wise Summary</div><div class="card-body"><button class="btn btn-sm btn-primary" onclick="genDaySummary()">Generate</button><div id="daySummary" class="mt-2 table-responsive"></div></div></div></div>
+    <div class="col-6"><div class="card"><div class="card-header fw-semibold">Staff Duty Report</div><div class="card-body"><button class="btn btn-sm btn-primary" onclick="genDutyReport()">Generate</button><button class="btn btn-sm btn-outline-secondary ms-2" onclick="window.open('/api/reports/export/duty_summary')">Export Excel</button><div id="dutReport" class="mt-2 table-responsive"></div></div></div></div>
+    <div class="col-6"><div class="card"><div class="card-header fw-semibold">Quick Exports</div><div class="card-body">
         <button class="btn btn-sm btn-outline-primary m-1" onclick="window.open('/api/reports/export/namelist')">Namelist</button>
         <button class="btn btn-sm btn-outline-primary m-1" onclick="window.open('/api/reports/export/seating')">Seating Report</button>
         <button class="btn btn-sm btn-outline-primary m-1" onclick="window.open('/api/reports/export/marks')">Internal Marks</button>
         <button class="btn btn-sm btn-outline-primary m-1" onclick="window.open('/api/reports/export/staff')">Staff List</button>
     </div></div></div>
 </div>
+</div>
+
+<!-- Tab 2: DuckDB Analytics -->
+<div class="tab-pane fade" id="tab-analytics">
+<div class="row g-3">
+    <div class="col-12"><div class="card"><div class="card-header fw-semibold d-flex justify-content-between"><span>Exam Day Summary</span><button class="btn btn-sm btn-primary" onclick="loadAnalytics()">Refresh All</button></div><div class="card-body" id="anExam"></div></div></div>
+    <div class="col-6"><div class="card"><div class="card-header fw-semibold">Course-wise Students</div><div class="card-body" id="anCourse"></div></div></div>
+    <div class="col-6"><div class="card"><div class="card-header fw-semibold">Staff Workload</div><div class="card-body" id="anWork"></div></div></div>
+    <div class="col-6"><div class="card"><div class="card-header fw-semibold">Room Utilization</div><div class="card-body" id="anRoom"></div></div></div>
+    <div class="col-6"><div class="card"><div class="card-header fw-semibold">Attendance Summary</div><div class="card-body" id="anAttend"></div></div></div>
+    <div class="col-12"><div class="card"><div class="card-header fw-semibold">Remuneration Summary by Duty Head</div><div class="card-body" id="anRem"></div></div></div>
+</div>
+</div>
+
+<!-- Tab 3: Database Management -->
+<div class="tab-pane fade" id="tab-db">
+<div class="row g-3">
+    <div class="col-6"><div class="card"><div class="card-header fw-semibold">Database Status</div><div class="card-body" id="dbStats">Loading...</div></div></div>
+    <div class="col-6"><div class="card"><div class="card-header fw-semibold">Backup & Restore</div><div class="card-body">
+        <div class="row g-2 mb-3">
+            <div class="col-7"><input class="form-control form-control-sm" id="backupTag" placeholder="Backup tag (optional)"></div>
+            <div class="col-5"><button class="btn btn-primary btn-sm w-100" onclick="createBackup()">Create Backup Now</button></div>
+        </div>
+        <div class="table-responsive"><table class="table table-sm table-bordered"><thead><tr><th>Backup File</th><th>Size</th><th>Date</th><th></th></tr></thead><tbody id="backupList"></tbody></table></div>
+    </div></div></div>
+</div>
+</div>
+
+</div><!-- tab-content -->
+{% endblock %}
+
+{% block scripts %}
 <script>
+// ==================== STANDARD REPORTS ====================
 function tbl(data,cols){let h='<table class="table table-sm table-bordered"><thead><tr>';cols.forEach(c=>h+=`<th>${c}</th>`);h+='</tr></thead><tbody>';data.forEach(r=>{h+='<tr>';cols.forEach(c=>h+=`<td>${r[c]||''}</td>`);h+='</tr>';});h+='</tbody></table>';return h;}
 function genSubjSummary(){fetch('/api/reports/subject_summary').then(r=>r.json()).then(d=>{document.getElementById('subjSummary').innerHTML=tbl(d,['subject_code','sname','total','seated','unseated','rooms']);});}
 function genDaySummary(){fetch('/api/reports/day_summary').then(r=>r.json()).then(d=>{document.getElementById('daySummary').innerHTML=tbl(d,['exam_date','session_name','papers','students','rooms']);});}
 function genDutyReport(){fetch('/api/reports/duty_summary').then(r=>r.json()).then(d=>{document.getElementById('dutReport').innerHTML=tbl(d,['staff_name','role','exam_date','session_name','room','subject_code']);});}
+
+// ==================== DUCKDB ANALYTICS ====================
+function loadAnalytics(){
+    fetch('/api/analytics/exam-summary').then(r=>r.json()).then(d=>{document.getElementById('anExam').innerHTML=tbl(d,['exam_date','session','students','rooms','staff_assigned','present','absent','ufm']);});
+    fetch('/api/analytics/course-stats').then(r=>r.json()).then(d=>{document.getElementById('anCourse').innerHTML=tbl(d,['course','code','students','subjects']);});
+    fetch('/api/analytics/staff-workload').then(r=>r.json()).then(d=>{document.getElementById('anWork').innerHTML=tbl(d,['name','designation','role','sessions','total_remuneration']);});
+    fetch('/api/analytics/room-utilization').then(r=>r.json()).then(d=>{document.getElementById('anRoom').innerHTML=tbl(d,['room','block','capacity','exam_days','avg_students_per_exam']);});
+    fetch('/api/analytics/attendance').then(r=>r.json()).then(d=>{document.getElementById('anAttend').innerHTML=tbl(d,['subject_code','subject_name','total','present','absent','ufm','pct']);});
+    fetch('/api/analytics/remuneration').then(r=>r.json()).then(d=>{document.getElementById('anRem').innerHTML=tbl(d,['duty_head','entries','total_amount','paid','pending']);});
+}
+
+// ==================== DATABASE MANAGEMENT ====================
+function loadDbStats(){fetch('/api/db-stats').then(r=>r.json()).then(d=>{let h=`<div class="mb-2"><span class="badge bg-${d.wal_mode=='wal'?'success':'warning'}">Mode: ${d.wal_mode.toUpperCase()}</span> <span class="ms-2">Size: ${d.db_size_kb} KB</span> <span class="ms-2">Total Rows: ${d.total_rows.toLocaleString()}</span></div><table class="table table-sm table-bordered"><thead><tr><th>Table</th><th>Rows</th></tr></thead><tbody>`;for(let[t,c]of Object.entries(d.tables))h+=`<tr><td>${t}</td><td>${c.toLocaleString()}</td></tr>`;h+='</tbody></table>';document.getElementById('dbStats').innerHTML=h;});}
+function loadBackups(){fetch('/api/backups').then(r=>r.json()).then(d=>{let h='';d.forEach(b=>h+=`<tr><td>${b.name}</td><td>${b.size_kb} KB</td><td>${b.modified}</td><td><button class="btn btn-sm btn-outline-warning" onclick="restoreBackup('${b.path}')">Restore</button></td></tr>`);document.getElementById('backupList').innerHTML=h||'<tr><td colspan="4" class="text-muted">No backups yet</td></tr>';});}
+function createBackup(){let tag=document.getElementById('backupTag').value;fetch('/api/backup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tag:tag})}).then(r=>r.json()).then(d=>{if(d.ok){alert('Backup created: '+d.file);loadBackups();document.getElementById('backupTag').value='';}});}
+function restoreBackup(path){if(confirm('Restore from backup? Current data will be replaced!'))fetch('/api/restore',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path:path})}).then(r=>r.json()).then(d=>{if(d.ok){alert('Restored! Reloading...');location.reload();}});}
+
+// Init
+loadDbStats();loadBackups();
 </script>
 {% endblock %}
