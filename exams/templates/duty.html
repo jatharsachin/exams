@@ -1,6 +1,16 @@
 {% extends "base.html" %}{% block title %}| Staff Duty{% endblock %}
 {% block content %}
-<h4 class="mb-3 pt-2"><i class="bi bi-clipboard-check me-2"></i>Staff Duty - Exam Order</h4>
+<h4 class="mb-3 pt-2"><i class="bi bi-clipboard-check me-2"></i>Staff Duty & Remuneration</h4>
+<ul class="nav nav-tabs mb-3" id="dutyTabs" role="tablist">
+    <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-order">Exam Order</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-heads">Duty Heads & Rates</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-rem">Remuneration</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-summary">Payment Summary</button></li>
+</ul>
+<div class="tab-content">
+
+<!-- Tab 1: Exam Order -->
+<div class="tab-pane fade show active" id="tab-order">
 <div class="row g-2 mb-3">
     <div class="col-3"><select class="form-select" id="ddate"></select></div>
     <div class="col-2"><select class="form-select" id="dsession"><option value="1">Morning</option><option value="2">Afternoon</option></select></div>
@@ -9,12 +19,82 @@
     <div class="col-3"><button class="btn btn-success btn-sm" onclick="printOrder()">Print Exam Order</button></div>
 </div>
 <table class="table table-bordered table-hover table-sm"><thead><tr><th>Room</th><th>Block</th><th>Subject</th><th>Junior Supervisor</th><th>Senior Supervisor</th><th>Peon</th></tr></thead><tbody id="dutBody"></tbody></table>
+</div>
+
+<!-- Tab 2: Duty Heads & Rates -->
+<div class="tab-pane fade" id="tab-heads">
+<div class="row"><div class="col-5"><div class="card mb-3"><div class="card-header fw-semibold">Duty Heads</div><div class="card-body">
+    <div class="row g-2 mb-3">
+        <div class="col-7"><input class="form-control form-control-sm" id="dhname" placeholder="Duty Head Name" required></div>
+        <div class="col-5"><button class="btn btn-success btn-sm w-100" onclick="saveHead()">+ Add Head</button></div>
+    </div>
+    <table class="table table-sm table-bordered" id="dhTable"><thead><tr><th>Duty Head</th><th>Sessions/Rates</th><th></th></tr></thead><tbody></tbody></table>
+</div></div></div>
+<div class="col-7"><div class="card mb-3"><div class="card-header fw-semibold">Edit Rates for: <span id="editHeadName" class="text-primary">--</span></div><div class="card-body">
+    <div class="row g-2 mb-2" id="rateForm">
+        <div class="col-4"><select class="form-select form-select-sm" id="rstype"><option>Morning</option><option>Afternoon</option><option>Full Day</option><option>Per Paper</option><option>Per Answer Sheet</option><option>Per Visit</option></select></div>
+        <div class="col-3"><input class="form-control form-control-sm" id="rrate" placeholder="Rate (₹)" type="number"></div>
+        <div class="col-2"><button class="btn btn-primary btn-sm w-100" onclick="addRate()">+ Add Rate</button></div>
+        <div class="col-3"><button class="btn btn-outline-secondary btn-sm w-100" onclick="autoSetupRates()">Auto Setup</button></div>
+    </div>
+    <table class="table table-sm table-bordered" id="rateTable"><thead><tr><th>Session Type</th><th>Rate (₹)</th><th></th></tr></thead><tbody></tbody></table>
+    <button class="btn btn-success btn-sm mt-2" onclick="saveAllRates()">Save All Rates</button>
+</div></div></div></div>
+</div>
+
+<!-- Tab 3: Remuneration -->
+<div class="tab-pane fade" id="tab-rem">
+<div class="row g-2 mb-3">
+    <div class="col-3"><select class="form-select" id="remDate"></select></div>
+    <div class="col-2"><select class="form-select" id="remSession"><option value="1">Morning</option><option value="2">Afternoon</option></select></div>
+    <div class="col-2"><button class="btn btn-primary btn-sm" onclick="calcRemuneration()">Calculate</button></div>
+    <div class="col-3"><input class="form-control form-control-sm" type="date" id="paidDate" placeholder="Paid Date"></div>
+    <div class="col-2"><button class="btn btn-success btn-sm w-100" onclick="markAllPaid()">Mark All Paid</button></div>
+</div>
+<table class="table table-sm table-bordered table-hover"><thead><tr><th>Staff</th><th>Duty</th><th>Date</th><th>Session</th><th>Rate</th><th>Amount</th><th>Status</th><th></th></tr></thead><tbody id="remBody"></tbody></table>
+</div>
+
+<!-- Tab 4: Summary -->
+<div class="tab-pane fade" id="tab-summary">
+<div class="mb-2"><button class="btn btn-success btn-sm" onclick="printRemuneration()">Print Remuneration Bill</button></div>
+<table class="table table-sm table-bordered table-hover"><thead><tr><th>Staff</th><th>Designation</th><th>Dept</th><th>Sessions</th><th>Total (₹)</th><th>Paid (₹)</th><th>Pending (₹)</th></tr></thead><tbody id="sumBody"></tbody></table>
+</div>
+
+</div><!-- tab-content -->
+{% endblock %}
+
+{% block scripts %}
 <script>
-fetch('/api/util/dates').then(r=>r.json()).then(d=>{let h='';d.forEach(x=>h+=`<option>${x}</option>`);document.getElementById('ddate').innerHTML=h;});
+// ==================== DUTY ORDER ====================
+fetch('/api/util/dates').then(r=>r.json()).then(d=>{let h='';d.forEach(x=>h+=`<option>${x}</option>`);document.getElementById('ddate').innerHTML=h;document.getElementById('remDate').innerHTML=h;});
 function loadDuty(){let dt=document.getElementById('ddate').value;let sess=document.getElementById('dsession').value;fetch(`/api/duty/view?date=${dt}&session=${sess}`).then(r=>r.json()).then(data=>{let h='';if(!data.length)h='<tr><td colspan="6" class="text-muted">No duties assigned. Click Auto-Assign.</td></tr>';else data.forEach(d=>{h+=`<tr><td>${d.room||''}</td><td>${d.block||''}</td><td><code>${d.subject||''}</code></td><td>${d['Junior Supervisor']||'--'}</td><td>${d['Senior Supervisor']||'--'}</td><td>${d['Peon']||'--'}</td></tr>`;});document.getElementById('dutBody').innerHTML=h;});}
 function assignDuty(){let dt=document.getElementById('ddate').value;fetch('/api/duty/assign',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({date:dt,session_id:document.getElementById('dsession').value})}).then(()=>loadDuty());}
 function clearDuty(){if(confirm('Clear?'))fetch('/api/duty/clear',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({date:document.getElementById('ddate').value,session_id:document.getElementById('dsession').value})}).then(()=>loadDuty());}
-function printOrder(){let txt='SPPU COLLEGE - EXAM ORDER\n'+'='.repeat(70)+'\nDate: '+document.getElementById('ddate').value+'\n\n';fetch(`/api/duty/view?date=${document.getElementById('ddate').value}&session=${document.getElementById('dsession').value}`).then(r=>r.json()).then(data=>{data.forEach(d=>{txt+=`${d.room||''} | ${d.subject||''} | Jr:${d['Junior Supervisor']||'--'} | Sr:${d['Senior Supervisor']||'--'} | Peon:${d['Peon']||'--'}\n`;});let b=new Blob([txt],{type:'text/plain'});let a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='Exam_Order.txt';a.click();});}
-loadDuty();
+function printOrder(){let txt='BJ COLLEGE, ALE - EXAM ORDER\n'+'='.repeat(70)+'\nDate: '+document.getElementById('ddate').value+'\n\n';fetch(`/api/duty/view?date=${document.getElementById('ddate').value}&session=${document.getElementById('dsession').value}`).then(r=>r.json()).then(data=>{data.forEach(d=>{txt+=`${d.room||''} | ${d.subject||''} | Jr:${d['Junior Supervisor']||'--'} | Sr:${d['Senior Supervisor']||'--'} | Peon:${d['Peon']||'--'}\n`;});let b=new Blob([txt],{type:'text/plain'});let a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='Exam_Order.txt';a.click();});}
+
+// ==================== DUTY HEADS & RATES ====================
+let selectedHeadId=null;
+function loadHeads(){fetch('/api/duty-heads').then(r=>r.json()).then(data=>{let h='';data.forEach(d=>{h+=`<tr><td><a href="#" onclick="selectHead(${d.id},'${d.name.replace(/'/g,"\\'")}')">${d.name}</a></td><td><small>${d.rates_str||'No rates set'}</small></td><td><button class="btn btn-sm btn-outline-danger" onclick="delHead(${d.id})">Del</button></td></tr>`;});document.getElementById('dhTable').querySelector('tbody').innerHTML=h;});}
+function saveHead(){let n=document.getElementById('dhname').value.trim();if(!n)return;fetch('/api/duty-heads/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:n,description:'',rates:[]})}).then(r=>r.json()).then(d=>{if(d.ok){document.getElementById('dhname').value='';loadHeads();}});}
+function delHead(id){if(confirm('Delete?'))fetch('/api/duty-heads/delete/'+id,{method:'DELETE'}).then(()=>loadHeads());}
+function selectHead(id,name){selectedHeadId=id;document.getElementById('editHeadName').textContent=name;loadRates(id);}
+function loadRates(headId){fetch('/api/duty-heads/rates/'+headId).then(r=>r.json()).then(data=>{let h='';data.forEach(r=>h+=`<tr><td>${r.session_type}</td><td><input class="form-control form-control-sm" id="raterow_${r.id}" value="${r.rate_per_unit}" type="number" style="width:120px"></td><td><button class="btn btn-sm btn-outline-danger" onclick="delRate(${r.id})">Del</button></td></tr>`);document.getElementById('rateTable').querySelector('tbody').innerHTML=h;});}
+function addRate(){if(!selectedHeadId)return alert('Select a duty head first');let st=document.getElementById('rstype').value;let rt=document.getElementById('rrate').value;if(!rt)return;fetch('/api/duty-heads/rates/'+selectedHeadId).then(r=>r.json()).then(existing=>{let newRate={session_type:st,rate:parseFloat(rt)};let merged=existing.filter(x=>x.session_type!=st);merged.push(newRate);let rates=merged.map(r=>({session_type:r.session_type,rate:r.rate_per_unit||r.rate}));fetch('/api/duty-heads/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:selectedHeadId,name:document.getElementById('editHeadName').textContent,rates:rates})}).then(()=>{loadRates(selectedHeadId);document.getElementById('rrate').value='';});});}
+function delRate(rid){if(confirm('Delete rate?')){execute("UPDATE remuneration_rates SET is_active=0 WHERE id=?",[rid]);loadRates(selectedHeadId);}}
+function saveAllRates(){if(!selectedHeadId)return;let rows=document.getElementById('rateTable').querySelectorAll('input[id^="raterow_"]');let rates=[];rows.forEach(inp=>{let rid=inp.id.replace('raterow_','');let val=inp.value;let st='';let prev=inp.closest('tr').querySelector('td').textContent;st=prev;rates.push({id:parseInt(rid),session_type:st,rate:parseFloat(val)});});fetch('/api/duty-heads/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:selectedHeadId,name:document.getElementById('editHeadName').textContent,rates:rates})}).then(()=>{loadRates(selectedHeadId);loadHeads();});}
+function autoSetupRates(){if(!selectedHeadId)return;let n=document.getElementById('editHeadName').textContent;let rates=[];if(n.includes('CEO')||n.includes('Chief Conductor'))rates=[{session_type:'Full Day',rate:2000}];else if(n.includes('Senior')&&n.includes('Supervisor'))rates=[{session_type:'Morning',rate:600},{session_type:'Afternoon',rate:600}];else if(n.includes('Junior')&&n.includes('Supervisor'))rates=[{session_type:'Morning',rate:500},{session_type:'Afternoon',rate:500}];else if(n.includes('Peon'))rates=[{session_type:'Morning',rate:350},{session_type:'Afternoon',rate:350}];else if(n.includes('Reliever'))rates=[{session_type:'Morning',rate:450},{session_type:'Afternoon',rate:450}];else if(n.includes('Flying')||n.includes('Squad'))rates=[{session_type:'Per Visit',rate:500}];else if(n.includes('QP')||n.includes('Distribution'))rates=[{session_type:'Morning',rate:400},{session_type:'Afternoon',rate:400}];else if(n.includes('Paper')&&n.includes('Setting'))rates=[{session_type:'Per Paper',rate:3000}];else if(n.includes('Assessment'))rates=[{session_type:'Per Answer Sheet',rate:10}];if(rates.length) fetch('/api/duty-heads/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:selectedHeadId,name:n,rates:rates})}).then(()=>loadRates(selectedHeadId));}
+
+// ==================== REMUNERATION ====================
+function loadRemunerations(){fetch('/api/remuneration').then(r=>r.json()).then(data=>{let h='';data.forEach(d=>{h+=`<tr><td>${d.staff_name}</td><td>${d.duty_name}</td><td>${d.exam_date}</td><td>${d.session_type}</td><td>₹${d.rate}</td><td>₹${d.amount}</td><td><span class="badge bg-${d.payment_status=='Paid'?'success':d.payment_status=='Cancelled'?'secondary':'warning'}">${d.payment_status}</span></td><td>${d.payment_status=='Pending'?`<button class="btn btn-sm btn-outline-success" onclick="markPaid(${d.id})">Paid</button>`:''}</td></tr>`;});document.getElementById('remBody').innerHTML=h||'<tr><td colspan="8" class="text-muted">Click Calculate to generate remuneration</td></tr>';});}
+function calcRemuneration(){let dt=document.getElementById('remDate').value;let sess=document.getElementById('remSession').value;fetch('/api/remuneration/calculate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({date:dt,session_id:sess})}).then(r=>r.json()).then(d=>{if(d.ok)loadRemunerations();});}
+function markPaid(id){let pd=document.getElementById('paidDate').value||new Date().toISOString().split('T')[0];fetch('/api/remuneration/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:id,payment_status:'Paid',paid_date:pd})}).then(()=>loadRemunerations());}
+function markAllPaid(){let pd=document.getElementById('paidDate').value||new Date().toISOString().split('T')[0];fetch('/api/remuneration').then(r=>r.json()).then(data=>{let pend=data.filter(d=>d.payment_status=='Pending');Promise.all(pend.map(d=>fetch('/api/remuneration/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:d.id,payment_status:'Paid',paid_date:pd})}))).then(()=>loadRemunerations());});}
+function loadSummary(){fetch('/api/remuneration/summary').then(r=>r.json()).then(data=>{let h='';data.forEach(d=>{h+=`<tr><td>${d.name}</td><td>${d.designation||''}</td><td>${d.department||''}</td><td>${d.total_sessions}</td><td>₹${(d.total_amount||0).toFixed(0)}</td><td>₹${(d.paid_amount||0).toFixed(0)}</td><td>₹${(d.pending_amount||0).toFixed(0)}</td></tr>`;});document.getElementById('sumBody').innerHTML=h||'<tr><td colspan="7" class="text-muted">No data</td></tr>';});}
+function printRemuneration(){let txt='BJ COLLEGE, ALE - REMUNERATION BILL\n'+'='.repeat(70)+'\n\n';fetch('/api/remuneration/summary').then(r=>r.json()).then(data=>{let total=0;data.forEach(d=>{txt+=`${d.name} (${d.designation||''}) - Sessions:${d.total_sessions} Total:₹${(d.total_amount||0).toFixed(0)} Paid:₹${(d.paid_amount||0).toFixed(0)} Pending:₹${(d.pending_amount||0).toFixed(0)}\n`;total+=(d.total_amount||0);});txt+=`\n${'='.repeat(70)}\nGRAND TOTAL: ₹${total.toFixed(0)}\n\nCEO Signature: ____________\nDate: ${new Date().toDateString()}`;let b=new Blob([txt],{type:'text/plain'});let a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='Remuneration_Bill.txt';a.click();});}
+
+function DelRateFallback(rid){fetch('/api/duty-heads/rates/'+selectedHeadId).then(r=>r.json()).then(existing=>{let filtered=existing.filter(x=>x.id!=rid).map(r=>({session_type:r.session_type,rate:r.rate_per_unit}));fetch('/api/duty-heads/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:selectedHeadId,name:document.getElementById('editHeadName').textContent,rates:filtered})}).then(()=>loadRates(selectedHeadId));});}
+
+// Init
+loadDuty();loadHeads();loadRemunerations();loadSummary();
 </script>
 {% endblock %}

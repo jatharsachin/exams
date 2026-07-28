@@ -209,6 +209,38 @@ def init_db():
             full_name TEXT,
             role TEXT DEFAULT 'Clerk'
         );
+
+        CREATE TABLE IF NOT EXISTS duty_heads (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL UNIQUE,
+            description TEXT
+        );
+
+        CREATE TABLE IF NOT EXISTS remuneration_rates (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            duty_head_id INTEGER NOT NULL,
+            session_type TEXT NOT NULL CHECK(session_type IN ('Morning','Afternoon','Full Day','Per Paper','Per Answer Sheet','Per Visit')),
+            rate_per_unit REAL NOT NULL DEFAULT 0,
+            is_active INTEGER DEFAULT 1,
+            FOREIGN KEY (duty_head_id) REFERENCES duty_heads(id) ON DELETE CASCADE,
+            UNIQUE(duty_head_id, session_type)
+        );
+
+        CREATE TABLE IF NOT EXISTS staff_remuneration (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            staff_id INTEGER NOT NULL,
+            duty_head_id INTEGER NOT NULL,
+            exam_date TEXT NOT NULL,
+            session_type TEXT NOT NULL,
+            units REAL DEFAULT 1,
+            rate REAL NOT NULL,
+            amount REAL NOT NULL,
+            payment_status TEXT DEFAULT 'Pending' CHECK(payment_status IN ('Pending','Paid','Cancelled')),
+            paid_date TEXT,
+            remarks TEXT,
+            FOREIGN KEY (staff_id) REFERENCES staff(id),
+            FOREIGN KEY (duty_head_id) REFERENCES duty_heads(id)
+        );
     """)
 
     cursor.execute("SELECT COUNT(*) FROM exam_sessions")
@@ -225,6 +257,31 @@ def init_db():
             INSERT INTO terms (acad_year_id, name, code) VALUES
                 (1, 'Winter (Oct-Nov)', 'WINTER'),
                 (1, 'Summer (Mar-Apr)', 'SUMMER');
+        """)
+
+    cursor.execute("SELECT COUNT(*) FROM duty_heads")
+    if cursor.fetchone()[0] == 0:
+        cursor.executescript("""
+            INSERT INTO duty_heads (name, description) VALUES
+                ('CEO / Chief Conductor', 'Overall exam centre in-charge'),
+                ('Senior Supervisor', 'Block / Floor supervisor'),
+                ('Junior Supervisor', 'Room invigilator'),
+                ('Peon', 'Helper / Messenger'),
+                ('Reliever', 'Backup staff for breaks'),
+                ('Flying Squad', 'Surprise inspection visits'),
+                ('QP Distribution', 'Question paper distribution staff'),
+                ('Paper Setting', 'Setting question papers'),
+                ('Assessment', 'Answer sheet assessment');
+            INSERT INTO remuneration_rates (duty_head_id, session_type, rate_per_unit) VALUES
+                (1, 'Full Day', 2000),
+                (2, 'Morning', 600), (2, 'Afternoon', 600),
+                (3, 'Morning', 500), (3, 'Afternoon', 500),
+                (4, 'Morning', 350), (4, 'Afternoon', 350),
+                (5, 'Morning', 450), (5, 'Afternoon', 450),
+                (6, 'Per Visit', 500),
+                (7, 'Morning', 400), (7, 'Afternoon', 400),
+                (8, 'Per Paper', 3000),
+                (9, 'Per Answer Sheet', 10);
         """)
 
     conn.commit()

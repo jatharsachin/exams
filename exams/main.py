@@ -432,6 +432,174 @@ def api_duty_clear():
     execute("DELETE FROM staff_duty WHERE exam_date=? AND session_id=?", (d["date"], int(d.get("session_id", 1))))
     return jsonify({"ok": True})
 
+# ---- Duty Heads & Remuneration ----
+@app.route("/api/duty-heads")
+def api_duty_heads():
+    rows = query("""
+        SELECT d.id, d.name, d.description,
+               GROUP_CONCAT(r.session_type||':'||r.rate_per_unit) as rates_str,
+               GROUP_CONCAT(r.id) as rate_ids
+        FROM duty_heads d LEFT JOIN remuneration_rates r ON d.id=r.duty_head_id AND r.is_active=1
+        GROUP BY d.id ORDER BY d.id
+    """)
+    return jsonify(rows)
+
+@app.route("/api/duty-heads/rates/<int:dh_id>")
+def api_duty_head_rates(dh_id):
+    rows = query("SELECT * FROM remuneration_rates WHERE duty_head_id=? AND is_active=1", (dh_id,))
+    return jsonify(rows)
+
+@app.route("/api/duty-heads/save", methods=["POST"])
+def api_duty_heads_save():
+    d = request.json
+    try:
+        if d.get("id"):
+            update("duty_heads", {"name": d["name"], "description": d.get("description", "")}, int(d["id"]))
+            did = int(d["id"])
+        else:
+            did = insert("duty_heads", {"name": d["name"], "description": d.get("description", "")})
+        execute("UPDATE remuneration_rates SET is_active=0 WHERE duty_head_id=?", (did,))
+        for rate in d.get("rates", []):
+            insert("remuneration_rates", {"duty_head_id": did, "session_type": rate["session_type"], "rate_per_unit": float(rate["rate"]), "is_active": 1})
+        return jsonify({"ok": True})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 400
+
+@app.route("/api/duty-heads/delete/<int:dh_id>", methods=["DELETE"])
+def api_duty_heads_delete(dh_id):
+    delete("duty_heads", dh_id)
+    return jsonify({"ok": True})
+
+# ---- Staff Remuneration Calculation ----
+@app.route("/api/remuneration")
+def api_remuneration():
+    date_from = request.args.get("from", "")
+    date_to = request.args.get("to", "")
+    staff_id = request.args.get("staff_id", "")
+    sql = """SELECT sr.id, s.name as staff_name, dh.name as duty_name, sr.exam_date,
+             sr.session_type, sr.units, sr.rate, sr.amount, sr.payment_status, sr.paid_date
+             FROM staff_remuneration sr
+             JOIN staff s ON sr.staff_id=s.id
+             JOIN duty_heads dh ON sr.duty_head_id=dh.id WHERE 1=1"""
+    params = []
+    if date_from: sql += " AND sr.exam_date>=?"; params.append(date_from)
+    if date_to: sql += " AND sr.exam_date<=?"; params.append(date_to)
+    if staff_id: sql += " AND sr.staff_id=?"; params.append(int(staff_id))
+    sql += " ORDER BY sr.exam_date, s.name"
+    return jsonify(query(sql, params))
+
+@app.route("/api/remuneration/calculate", methods=["POST"])
+def api_remuneration_calculate():
+    d = request.json
+    edate = d.get("date", "")
+    sess_id = int(d.get("session_id", 1))
+    sess_name = "Morning" if sess_id == 1 else "Afternoon"
+    execute("DELETE FROM staff_remuneration WHERE exam_date=? AND session_type=?", (edate, sess_name))
+    duties = query("""
+        SELECT sd.staff_id, sd.role, s.name, bl.name as block_name, r.name as room_name
+        FROM staff_duty sd JOIN staff s ON sd.staff_id=s.id
+        LEFT JOIN rooms r ON sd.room_id=r.id
+        LEFT JOIN blocks bl ON sd.block_id=bl.id
+        WHERE sd.exam_date=? AND sd.session_id=?
+    """, (edate, sess_id))
+    head_map = {}
+    for h in query("SELECT d.id, d.name, rr.session_type, rr.rate_per_unit FROM duty_heads d JOIN remuneration_rates rr ON d.id=rr.duty_head_id WHERE rr.is_active=1"):
+        key = (h["name"], h["session_type"])
+        head_map[key] = {"head_id": h["id"], "rate": h["rate_per_unit"]}
+    count = 0
+    for duty in duties:
+        role = duty["role"]
+        key = (role, sess_name)
+        if key in head_map:
+            head = head_map[key]
+            try:
+                insert("staff_remuneration", {"staff_id": duty["staff_id"], "duty_head_id": head["head_id"],
+                    "exam_date": edate, "session_type": sess_name, "units": 1, "rate": head["rate"],
+                    "amount": head["rate"], "payment_status": "Pending"})
+                count += 1
+            except: pass
+    return jsonify({"ok": True, "calculated": count})
+
+@app.route("/api/remuneration/save", methods=["POST"])
+def api_remuneration_save():
+    d = request.json
+    try:
+        if d.get("id"):
+            update("staff_remuneration", {"payment_status": d["payment_status"], "paid_date": d.get("paid_date", ""), "remarks": d.get("remarks", "")}, int(d["id"]))
+        return jsonify({"ok": True})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 400
+
+@app.route("/api/remuneration/delete/<int:rid>", methods=["DELETE"])
+def api_remuneration_delete(rid):
+    delete("staff_remuneration", rid)
+    return jsonify({"ok": True})
+
+@app.route("/api/remuneration/summary")
+def api_remuneration_summary():
+    rows = query("""
+        SELECT s.id, s.name, s.designation, s.department,
+               COUNT(sr.id) as total_sessions,
+               SUM(sr.amount) as total_amount,
+               SUM(CASE WHEN sr.payment_status='Paid' THEN sr.amount ELSE 0 END) as paid_amount,
+               SUM(CASE WHEN sr.payment_status='Pending' THEN sr.amount ELSE 0 END) as pending_amount
+        FROM staff s LEFT JOIN staff_remuneration sr ON s.id=sr.staff_id
+        GROUP BY s.id ORDER BY total_amount DESC
+    """)
+    return jsonify(rows)
+
+# ---- Students (Namelist) CRUD ----
+@app.route("/api/students")
+def api_students():
+    course = request.args.get("course", "")
+    sql = "SELECT n.id, n.prn, n.student_name, c.code as course_code, c.name as course_name, n.subject_code, n.exam_date FROM namelist n JOIN courses c ON n.course_id=c.id"
+    params = []
+    if course:
+        sql += " WHERE c.code=?"
+        params.append(course)
+    sql += " ORDER BY n.id DESC LIMIT 500"
+    return jsonify(query(sql, params))
+
+@app.route("/api/students/save", methods=["POST"])
+def api_students_save():
+    d = request.json
+    try:
+        course = query("SELECT id FROM courses WHERE code=?", (d["course_code"],))
+        if not course: return jsonify({"ok": False, "error": "Course not found"}), 400
+        cid = course[0]["id"]
+        if d.get("id"):
+            update("namelist", {"prn": d["prn"], "student_name": d["name"], "course_id": cid,
+                "subject_code": d.get("subject_code", ""), "exam_date": d.get("exam_date", "")}, int(d["id"]))
+        else:
+            insert("namelist", {"prn": d["prn"], "student_name": d["name"], "course_id": cid,
+                "subject_code": d.get("subject_code", ""), "exam_date": d.get("exam_date", "")})
+        return jsonify({"ok": True})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 400
+
+@app.route("/api/students/delete/<int:sid>", methods=["DELETE"])
+def api_students_delete(sid):
+    delete("namelist", sid)
+    return jsonify({"ok": True})
+
+@app.route("/api/students/bulk", methods=["POST"])
+def api_students_bulk():
+    d = request.json
+    try:
+        course = query("SELECT id FROM courses WHERE code=?", (d["course_code"],))
+        if not course: return jsonify({"ok": False, "error": "Course not found"}), 400
+        cid = course[0]["id"]
+        count = 0
+        for row in d.get("students", []):
+            try:
+                insert("namelist", {"prn": row["prn"], "student_name": row["name"], "course_id": cid,
+                    "subject_code": row.get("subject_code", ""), "exam_date": row.get("exam_date", "")})
+                count += 1
+            except: pass
+        return jsonify({"ok": True, "inserted": count})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 400
+
 # ---- Attendance ----
 @app.route("/attendance")
 def attendance_page():
