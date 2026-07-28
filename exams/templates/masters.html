@@ -85,7 +85,7 @@
 
 <!-- Staff -->
 <div class="tab-pane fade" id="tab-staff">
-<div class="card mb-3"><div class="card-body">
+<div class="card mb-3"><div class="card-header fw-semibold d-flex justify-content-between"><span>Add / Edit Staff</span><button class="btn btn-sm btn-outline-secondary" onclick="loadStaff()"><i class="bi bi-arrow-clockwise"></i> Refresh</button></div><div class="card-body">
     <form id="staffForm" class="row g-2">
         <input type="hidden" id="stid">
         <div class="col-3"><input class="form-control form-control-sm" id="stname" placeholder="Full Name" required></div>
@@ -159,7 +159,7 @@ function delRoom(id){if(confirm('Delete?'))fetch('/api/rooms/delete/'+id,{method
 document.getElementById('roomForm').onsubmit=function(e){e.preventDefault();let isNew=!document.getElementById('rid').value;fetch('/api/rooms/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:document.getElementById('rid').value||null,name:document.getElementById('rname').value,block_name:document.getElementById('rblock').value,capacity:document.getElementById('rcap').value,bench_count:document.getElementById('rbench').value})}).then(()=>{if(isNew)this.reset();document.getElementById('rid').value='';loadRooms();});};
 
 // ==================== STAFF ====================
-function loadStaff(){fetch('/api/staff').then(r=>r.json()).then(d=>{let h='';d.forEach(s=>h+=`<tr><td>${s.name}</td><td>${s.designation||''}</td><td>${s.department||''}</td><td>${s.mobile||''}</td><td><span class="badge bg-${s.role=='Principal'?'danger':s.role=='CEO'?'warning text-dark':'primary'}">${s.role}</span></td><td><button class="btn btn-sm btn-outline-primary" onclick="editStaff(${s.id})">Edit</button> <button class="btn btn-sm btn-outline-danger" onclick="delStaff(${s.id})">Del</button></td></tr>`);document.getElementById('stfbody').innerHTML=h;});}
+function loadStaff(){fetch('/api/staff').then(r=>r.json()).then(d=>{let h='';if(!d.length)h='<tr><td colspan="6" class="text-muted">No staff added yet. Use form above to add.</td></tr>';else d.forEach(s=>h+=`<tr><td>${s.name}</td><td>${s.designation||''}</td><td>${s.department||''}</td><td>${s.mobile||''}</td><td><span class="badge bg-${s.role=='Principal'?'danger':s.role=='CEO'?'warning text-dark':'primary'}">${s.role}</span></td><td><button class="btn btn-sm btn-outline-primary" onclick="editStaff(${s.id})">Edit</button> <button class="btn btn-sm btn-outline-danger" onclick="delStaff(${s.id})">Del</button></td></tr>`);document.getElementById('stfbody').innerHTML=h;}).catch(e=>{document.getElementById('stfbody').innerHTML='<tr><td colspan="6" class="text-danger">Error loading: '+e+'</td></tr>';});}
 function editStaff(id){fetch('/api/staff').then(r=>r.json()).then(d=>{let s=d.find(x=>x.id==id);if(s){document.getElementById('stid').value=s.id;document.getElementById('stname').value=s.name;document.getElementById('stdesig').value=s.designation||'';document.getElementById('stdept').value=s.department||'';document.getElementById('stmob').value=s.mobile||'';document.getElementById('strole').value=s.role;}});}
 function delStaff(id){if(confirm('Delete?'))fetch('/api/staff/delete/'+id,{method:'DELETE'}).then(()=>loadStaff());}
 document.getElementById('staffForm').onsubmit=function(e){e.preventDefault();let isNew=!document.getElementById('stid').value;fetch('/api/staff/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:document.getElementById('stid').value||null,name:document.getElementById('stname').value,designation:document.getElementById('stdesig').value,department:document.getElementById('stdept').value,mobile:document.getElementById('stmob').value,role:document.getElementById('strole').value})}).then(()=>{if(isNew)this.reset();document.getElementById('stid').value='';loadStaff();});};
@@ -173,6 +173,20 @@ function clearStudents(){if(confirm('Delete ALL students?')){fetch('/api/student
 document.getElementById('stufilter').onchange=function(){loadStudents(this.value);};
 
 // ==================== INIT ====================
-loadAY();loadCourses();loadSubjects();loadBlocks();loadRooms();loadStaff();loadStudents();
+document.addEventListener('DOMContentLoaded',function(){
+    loadAY();loadCourses();loadSubjects();loadBlocks();loadRooms();loadStaff();loadStudents();
+});
+// Reload data when switching tabs (ensures data is always fresh)
+document.querySelectorAll('#masterTabs button[data-bs-toggle=\"tab\"]').forEach(btn=>{
+    btn.addEventListener('shown.bs.tab',function(e){
+        let target=e.target.getAttribute('data-bs-target');
+        if(target==='#tab-course')loadCourses();
+        if(target==='#tab-subject')loadSubjects();
+        if(target==='#tab-room'){loadBlocks();loadRooms();}
+        if(target==='#tab-staff')loadStaff();
+        if(target==='#tab-student')loadStudents();
+        if(target==='#tab-year')loadAY();
+    });
+});
 </script>
 {% endblock %}
