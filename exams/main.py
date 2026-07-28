@@ -85,12 +85,6 @@ def api_terms_save():
 def api_terms_delete(tid):
     delete("terms", tid)
     return jsonify({"ok": True})
-
-# ---- Courses ----
-@app.route("/courses")
-def courses_page():
-    return render_template("courses.html")
-
 @app.route("/api/courses")
 def api_courses():
     return jsonify(get_all("courses"))
@@ -111,12 +105,6 @@ def api_courses_save():
 def api_courses_delete(cid):
     delete("courses", cid)
     return jsonify({"ok": True})
-
-# ---- Subjects ----
-@app.route("/subjects")
-def subjects_page():
-    return render_template("subjects.html")
-
 @app.route("/api/subjects")
 def api_subjects():
     rows = query("SELECT s.id, s.code, s.name, c.name as course_name, c.code as course_code, s.type, s.credits, s.paper_no, s.max_internal, s.max_external FROM subjects s JOIN courses c ON s.course_id=c.id ORDER BY s.code")
@@ -144,12 +132,6 @@ def api_subjects_save():
 def api_subjects_delete(sid):
     delete("subjects", sid)
     return jsonify({"ok": True})
-
-# ---- Rooms ----
-@app.route("/rooms")
-def rooms_page():
-    return render_template("rooms.html")
-
 @app.route("/api/blocks")
 def api_blocks():
     return jsonify(get_all("blocks"))
@@ -194,12 +176,6 @@ def api_rooms_save():
 def api_rooms_delete(rid):
     delete("rooms", rid)
     return jsonify({"ok": True})
-
-# ---- Staff ----
-@app.route("/staff")
-def staff_page():
-    return render_template("staff.html")
-
 @app.route("/api/staff")
 def api_staff():
     return jsonify(get_all("staff"))
@@ -817,4 +793,4 @@ def open_browser():
 
 if __name__ == "__main__":
     threading.Thread(target=open_browser, daemon=True).start()
-    app.run(host="0.0.0.0", port=5000, debug=False)
+    app.run(host="0.0.0.0", port=5000, debug=True, use_reloader=True)
